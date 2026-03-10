@@ -109,6 +109,160 @@
       </div>
     </div>
 
+    <!-- 智能动作序列生成器 -->
+    <div class="smart-sequence-generator">
+      <h3 class="sequence-title">🎬 智能动作序列生成器</h3>
+      
+      <div class="generator-content">
+        <div class="selector-section">
+          <label class="selector-label">选择关键动作（按顺序点击）：</label>
+          
+          <!-- 动作分类标签 -->
+          <div class="action-categories">
+            <button 
+              :class="['category-btn', { active: categoryFilter === 'all' }]"
+              @click="categoryFilter = 'all'"
+            >
+              全部
+            </button>
+            <button 
+              :class="['category-btn', { active: categoryFilter === 'hand' }]"
+              @click="categoryFilter = 'hand'"
+            >
+              👋 手部
+            </button>
+            <button 
+              :class="['category-btn', { active: categoryFilter === 'arm' }]"
+              @click="categoryFilter= 'arm'"
+            >
+              💪 手臂
+            </button>
+            <button 
+              :class="['category-btn', { active: categoryFilter === 'head' }]"
+              @click="categoryFilter = 'head'"
+            >
+              😮 头部
+            </button>
+            <button 
+              :class="['category-btn', { active: categoryFilter === 'leg' }]"
+              @click="categoryFilter = 'leg'"
+            >
+              👣 腿部
+            </button>
+            <button 
+              :class="['category-btn', { active: categoryFilter === 'body' }]"
+              @click="categoryFilter= 'body'"
+            >
+              🏃 腰部
+            </button>
+          </div>
+          
+          <div class="action-selector-buttons">
+            <button 
+              v-for="(action, key) in filteredQuickActions" 
+              :key="key"
+              @click="addToSequence(key)"
+              class="sequence-action-btn"
+              :class="{ selected: sequence.some(s => s.actionKey === key) }"
+            title="点击添加到序列"
+            >
+              {{ getActionEmoji(key) }} {{ getActionName(key) }}
+            </button>
+          </div>
+          
+          <div class="combo-controls">
+            <button @click="lockCurrentFrame" class="lock-frame-btn" :disabled="sequence.length === 0">
+              🔒 锁定当前帧（下一个动作将创建新帧）
+            </button>
+            <button @click="clearLastAction" class="undo-btn" :disabled="sequence.length === 0">
+              ↩️ 撤销上一步
+            </button>
+          </div>
+          
+          <div class="combo-hint">
+            💡 <strong>组合技巧：</strong><br>
+            • 连续点击的动作会自动组合到同一帧<br>
+            • 点击"🔒 锁定当前帧"后，下一个动作会创建新关键帧<br>
+            • 例如：点击"双脚分开" → "抬右手" = 组合姿势
+          </div>
+        </div>
+        
+        <div class="sequence-preview">
+          <div class="sequence-list">
+            <div v-if="sequence.length === 0" class="empty-sequence">
+              👆 请点击上方按钮选择动作
+            </div>
+            
+            <!-- 显示关键帧组 -->
+            <div 
+              v-for="(frameGroup, groupIndex) in groupedSequence" 
+              :key="groupIndex"
+              class="frame-group"
+            >
+              <div class="frame-group-header">
+                <span class="group-number">关键帧 {{ groupIndex + 1 }}</span>
+                <button @click="removeFrameGroup(groupIndex)" class="remove-group-btn">
+                  🗑️ 删除此帧
+                </button>
+              </div>
+              
+              <div class="frame-actions">
+                <div 
+                  v-for="(actionKey, actionIndex) in frameGroup" 
+                  :key="actionIndex"
+                  class="action-in-frame"
+                >
+                  <span class="action-dot">●</span>
+                  <span class="action-name">{{ getActionName(actionKey) }}</span>
+                  <button @click="removeActionFromFrame(groupIndex, actionIndex)" class="remove-action-btn">×</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="sequence-controls">
+            <div class="control-row">
+              <label>拍数：</label>
+              <select v-model.number="targetBeats" class="beats-select">
+                <option value="2">2 拍</option>
+                <option value="4" selected>4 拍</option>
+                <option value="8">8 拍</option>
+                <option value="16">16 拍</option>
+              </select>
+              <span class="info-text">（每拍 1 秒，共{{ targetBeats }}秒）</span>
+            </div>
+            
+            <div class="control-row">
+              <label>过渡方式：</label>
+              <select v-model="transitionType" class="transition-select">
+                <option value="smooth">平滑过渡</option>
+                <option value="linear">线性插值</option>
+                <option value="ease">缓入缓出</option>
+              </select>
+            </div>
+            
+            <div class="button-row">
+              <button @click="generateSequence" class="generate-btn" :disabled="sequence.length < 1">
+                ✨ 生成{{ targetBeats }}拍动画
+              </button>
+              <button @click="clearSequence" class="clear-btn">
+                🗑️ 清空序列
+              </button>
+            </div>
+            
+            <div class="advanced-tips">
+              <p><strong>💡 使用技巧：</strong></p>
+              <ul>
+                <li>点击同一个动作多次可以<strong>保持该动作不变</strong></li>
+                <li>为关键帧添加多个动作可创建<strong>组合姿势</strong></li>
+                <li>例如：先选"双脚分开"，再选"抬右手" = 双脚分开 + 抬右手</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="frames-timeline">
       <div 
         v-for="(frame, index) in frames" 
@@ -738,10 +892,10 @@ const resetPose = () => {
 };
 
 // 应用快速动作
-const applyQuickAction = (actionName) => {
+const applyQuickAction= (actionName) => {
   const action = quickActions[actionName];
   if (!action) {
-   console.error('未找到动作:', actionName);
+  console.error('未找到动作:', actionName);
    return;
   }
   
@@ -763,6 +917,339 @@ const applyQuickAction = (actionName) => {
   updateThumbnail(currentFrame.value);
   
   console.log(`✅ 应用快速动作：${actionName}`);
+};
+
+// ========== 智能动作序列生成器 ==========
+
+// 动作序列状态 - 支持组合动作
+const sequence = ref([]); // 数组元素：{ actionKey, category, isNewFrame }
+const targetBeats = ref(4);
+const transitionType = ref('smooth');
+const categoryFilter = ref('all');
+
+// 动作分类定义
+const actionCategories = {
+  hand: ['leftHandHip', 'rightHandHip', 'raiseRightHand', 'raiseLeftHand', 'handsDownCircle'],
+  arm: ['rightArmStraight', 'leftArmStraight'],
+  head: ['shakeHeadLeft', 'shakeHeadRight'],
+  leg: ['feetTogether', 'feetApart'],
+  body: ['bendLeft', 'bendRight']
+};
+
+// 获取动作所属分类
+const getActionCategory = (actionKey) => {
+  for (let [category, actions] of Object.entries(actionCategories)) {
+  if (actions.includes(actionKey)) return category;
+  }
+  return 'hand';
+};
+
+// 根据分类筛选动作
+const filteredQuickActions = computed(() => {
+  if (categoryFilter.value === 'all') {
+  return quickActions;
+  }
+  
+  const filtered = {};
+  const categoryActions = actionCategories[categoryFilter.value] || [];
+  
+  for (let key of categoryActions) {
+  if (quickActions[key]) {
+     filtered[key] = quickActions[key];
+    }
+  }
+  
+  return filtered;
+});
+
+// 将序列分组显示（同一帧的多个动作放在一起）
+const groupedSequence = computed(() => {
+  const groups = [];
+  let currentGroup = [];
+  
+  sequence.value.forEach((item) => {
+    // 跳过虚拟标记（不显示）
+   if (item.isMarker) return;
+    
+    // 如果是新帧标记或者第一个元素
+   if (item.isNewFrame || currentGroup.length === 0) {
+     if (currentGroup.length > 0) {
+        groups.push(currentGroup);
+      }
+      currentGroup = [item.actionKey];
+    } else {
+      // 否则加入当前组
+      currentGroup.push(item.actionKey);
+    }
+  });
+  
+  if (currentGroup.length > 0) {
+    groups.push(currentGroup);
+  }
+  
+  return groups;
+});
+
+// 添加到序列 - 默认不创建新帧（实现组合）
+const addToSequence = (actionKey) => {
+  // 检查是否存在虚拟标记（用户点击了"锁定"）
+  const hasMarker= sequence.value.some(item => item.isMarker);
+  
+  // 只有在两种情况下创建新帧：
+  // 1. 序列为空（第一个动作）
+  // 2. 有虚拟标记（用户明确点击了"锁定当前帧"）
+  const shouldCreateNewFrame = sequence.value.length === 0 || hasMarker;
+  
+  sequence.value.push({ 
+    actionKey, 
+    category: getActionCategory(actionKey), 
+    isNewFrame: shouldCreateNewFrame 
+  });
+  
+  console.log(`✅ 已添加动作到序列：${getActionName(actionKey)} ${shouldCreateNewFrame ? '(新帧)' : '(组合)'}`);
+  
+  // 如果刚才有虚拟标记并且已经创建了新帧，清除所有标记（因为它们已经完成了使命）
+  if (hasMarker && shouldCreateNewFrame) {
+   // 过滤掉所有虚拟标记
+   sequence.value = sequence.value.filter(item => !item.isMarker);
+  console.log('🗑️ 已清除帧边界标记');
+  }
+};
+
+// 从序列移除单个动作（按扁平索引）
+const removeFromSequence = (index) => {
+  sequence.value.splice(index, 1);
+};
+
+// 从帧中移除某个动作
+const removeActionFromFrame = (groupIndex, actionIndex) => {
+  let flatIndex = 0;
+  for (let i = 0; i <= groupIndex; i++) {
+  const groupSize = groupedSequence.value[i].length;
+  if (i === groupIndex) {
+     sequence.value.splice(flatIndex + actionIndex, 1);
+   return;
+    }
+   flatIndex += groupSize;
+  }
+};
+
+// 删除整个帧组
+const removeFrameGroup = (groupIndex) => {
+  let flatIndex = 0;
+  for (let i = 0; i < groupIndex; i++) {
+   flatIndex += groupedSequence.value[i].length;
+  }
+  const groupSize = groupedSequence.value[groupIndex].length;
+  sequence.value.splice(flatIndex, groupSize);
+};
+
+// 清空序列
+const clearSequence = () => {
+  sequence.value = [];
+};
+
+// 锁定当前帧（下一个动作将创建新关键帧）
+const lockCurrentFrame = () => {
+  if (sequence.value.length === 0) return;
+  
+  // 添加一个虚拟的帧边界标记（不是真实动作）
+  sequence.value.push({ 
+    actionKey: null, 
+    category: null, 
+    isNewFrame: true,
+    isMarker: true  // 标记这是一个虚拟的帧边界标记
+  });
+  
+  console.log('🔒 已锁定当前帧，下一个动作将创建新关键帧');
+};
+
+// 清除最后一个动作
+const clearLastAction = () => {
+  if (sequence.value.length === 0) return;
+  
+  const lastItem = sequence.value[sequence.value.length - 1];
+  
+  // 如果最后一个是虚拟标记，也一并删除
+  if (lastItem.isMarker) {
+    console.log('🗑️ 删除帧边界标记');
+  } else {
+    console.log(`↩️ 已撤销动作：${getActionName(lastItem.actionKey)}`);
+  }
+  
+  sequence.value.pop();
+};
+
+// 获取动作名称
+const getActionName = (actionKey) => {
+  const names = {
+   leftHandHip: '左手叉腰',
+    rightHandHip: '右手叉腰',
+    raiseRightHand: '抬右手',
+    raiseLeftHand: '抬左手',
+    rightArmStraight: '右手伸直',
+   leftArmStraight: '左手伸直',
+    shakeHeadLeft: '向左摇头',
+    shakeHeadRight: '向右摇头',
+    feetTogether: '双脚收齐',
+    feetApart: '双脚打开',
+    bendLeft: '向左弯腰',
+    bendRight: '向右弯腰',
+    handsDownCircle: '双手交叠'
+  };
+  return names[actionKey] || actionKey;
+};
+
+// 获取动作表情符号
+const getActionEmoji = (actionKey) => {
+  const emojis = {
+   leftHandHip: '🤘',
+    rightHandHip: '🤘',
+    raiseRightHand: '🙋',
+    raiseLeftHand: '🙋',
+    rightArmStraight: '💪',
+   leftArmStraight: '💪',
+    shakeHeadLeft: '😮',
+    shakeHeadRight: '😮',
+    feetTogether: '👣',
+    feetApart: '👣',
+    bendLeft: '🏃',
+    bendRight: '🏃',
+    handsDownCircle: '💫'
+  };
+  return emojis[actionKey] || '⚡';
+};
+
+// 生成动作序列 - 支持组合动作
+const generateSequence = async () => {
+  if (groupedSequence.value.length < 2) {
+   alert('请至少选择 2 个关键帧来生成动画');
+   return;
+  }
+  
+  const totalFrames = targetBeats.value * fps.value; // 总帧数 = 拍数 × FPS
+  const segmentFrames = Math.floor(totalFrames / (groupedSequence.value.length- 1)); // 每两个关键帧之间的帧数
+  
+  console.log(`开始生成 ${targetBeats.value}拍动画，共${totalFrames}帧，关键帧数：${groupedSequence.value.length}，分段帧数：${segmentFrames}`);
+  
+  // 保存原始帧数据
+  const originalFrames = JSON.parse(JSON.stringify(frames.value));
+  const originalCurrentFrame = currentFrame.value;
+  
+  // 清除所有帧，只保留第一帧
+  frames.value = [{ pose: createDefaultPose() }];
+  currentFrame.value = 0;
+  
+  try {
+   // 为每个关键帧生成过渡帧
+   for (let i = 0; i < groupedSequence.value.length; i++) {
+   const frameGroup = groupedSequence.value[i];
+     
+    if (i === 0) {
+      // 第一个关键帧：直接应用所有动作的组合
+    frameGroup.forEach(actionKey => {
+      const action = quickActions[actionKey];
+        applyQuickActionToPose(frames.value[0].pose, action);
+      });
+     updateThumbnail(0);
+     } else {
+      // 后续关键帧：生成过渡帧
+    const prevPose = frames.value[frames.value.length- 1].pose;
+      
+      // 如果是最后一个关键帧，确保使用完整的拍数
+    const isLastFrame = i === groupedSequence.value.length- 1;
+    const frameCount = isLastFrame ? 
+        (totalFrames - frames.value.length + 1) : 
+        segmentFrames;
+      
+      // 计算目标姿势（组合该帧的所有动作）
+    const targetPose = createDefaultPose();
+    frameGroup.forEach(actionKey => {
+      const action= quickActions[actionKey];
+        applyQuickActionToPose(targetPose, action);
+      });
+      
+      // 生成渐变过渡帧
+      for (let j = 1; j <= frameCount; j++) {
+      const progress = j / frameCount;
+      const easedProgress= easeFunction(progress, transitionType.value);
+        
+      const newPose = interpolatePose(prevPose, targetPose, easedProgress);
+      frames.value.push({ pose: newPose });
+        
+      const newFrameIndex = frames.value.length - 1;
+      await nextTick();
+       updateThumbnail(newFrameIndex);
+      }
+     }
+     
+     // 更新进度提示
+   console.log(`✅ 完成关键帧 ${i + 1}/${groupedSequence.value.length}: ${frameGroup.map(k => getActionName(k)).join(' + ')}`);
+    }
+    
+   // 跳转到第一帧
+   currentFrame.value = 0;
+  draw();
+   
+   alert(`✨ 成功生成 ${targetBeats.value}拍动画！共${frames.value.length}帧\n每秒${fps.value}帧，总时长${targetBeats.value}秒`);
+   
+  } catch (error) {
+  console.error('生成序列失败:', error);
+   alert('生成序列时出错，请重试');
+   
+   // 恢复原始数据
+  frames.value = originalFrames;
+   currentFrame.value = originalCurrentFrame;
+  draw();
+  }
+};
+
+// 应用快速动作到指定姿势（不改变当前画布）
+const applyQuickActionToPose = (pose, action) => {
+  for (let jointId in action) {
+  if (pose[jointId]) {
+     pose[jointId].x = action[jointId].x;
+     pose[jointId].y = action[jointId].y;
+    }
+  }
+};
+
+// 姿势插值函数（支持从一个姿势到另一个姿势）
+const interpolatePose = (fromPose, toPose, progress) => {
+  const newPose = {};
+  
+  // 复制起始姿势的所有关节
+  for (let jointId in fromPose) {
+   newPose[jointId] = { ...fromPose[jointId] };
+  }
+  
+  // 对目标姿势中的关节进行插值
+  for (let jointId in toPose) {
+  if (newPose[jointId]) {
+   const fromJoint = fromPose[jointId];
+   const toJoint = toPose[jointId];
+     
+     newPose[jointId].x = fromJoint.x + (toJoint.x - fromJoint.x) * progress;
+     newPose[jointId].y = fromJoint.y + (toJoint.y - fromJoint.y) * progress;
+    }
+  }
+  
+  return newPose;
+};
+
+// 缓动函数
+const easeFunction= (t, type) => {
+  switch(type) {
+   case 'linear':
+     return t;
+   case 'ease':
+     // 缓入缓出（ease-in-out）
+     return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+   case 'smooth':
+   default:
+     // 平滑过渡（使用余弦插值）
+     return (1 - Math.cos(t * Math.PI)) / 2;
+  }
 };
 
 const goToFrame = (index) => {
@@ -1128,6 +1615,7 @@ canvas { cursor: pointer; background: #fff; }
   font-size: 12px;
 }
 .clear-cache-btn:hover { background: #c82333; }
+.clear-btn:hover { background: #c82333; transform: translateY(-2px); }
 
 .quick-actions {
   margin: 20px 0;
@@ -1171,7 +1659,399 @@ canvas { cursor: pointer; background: #fff; }
   background: white;
 }
 
-.action-btn:active {
+.action-btn:active { transform: translateY(-1px); }
+
+/* 智能动作序列生成器样式 */
+.smart-sequence-generator {
+  margin: 20px 0;
+  padding: 25px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 12px;
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.sequence-title {
+  color: white;
+  font-size: 20px;
+  font-weight: bold;
+  margin: 0 0 20px 0;
+  text-align: center;
+}
+
+.generator-content {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.selector-section {
+  flex: 1;
+  min-width: 300px;
+}
+
+.selector-label {
+  color: white;
+  font-size: 14px;
+  font-weight: bold;
+  display: block;
+  margin-bottom: 10px;
+}
+
+/* 动作分类筛选按钮 */
+.action-categories {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.category-btn {
+  padding: 4px 10px;
+  background: rgba(255, 255, 255, 0.7);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.2s ease;
+}
+
+.category-btn:hover {
+  background: rgba(255, 255, 255, 0.9);
   transform: translateY(-1px);
+}
+
+.category-btn.active {
+  background: white;
+  color: #667eea;
+  border-color: white;
+  box-shadow: 0 2px 8px rgba(255, 255, 255, 0.3);
+}
+
+.action-selector-buttons {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 8px;
+  max-height:300px;
+  overflow-y: auto;
+  padding: 5px;
+}
+
+.sequence-action-btn {
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.9);
+  color: #667eea;
+  border: 2px solid transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: bold;
+  transition: all 0.2s ease;
+}
+
+.sequence-action-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(255, 255, 255, 0.3);
+  background: white;
+}
+
+.sequence-action-btn.selected {
+  background: #fff;
+  border-color: #ffca2c;
+  box-shadow: 0 0 0 2px #ffca2c;
+}
+
+.sequence-preview {
+  flex: 1;
+  min-width: 300px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 8px;
+  padding: 15px;
+}
+
+.sequence-list {
+  min-height: 150px;
+  max-height: 200px;
+  overflow-y: auto;
+  background: #f8f9fa;
+  border-radius: 6px;
+  padding: 10px;
+  margin-bottom: 15px;
+}
+
+.empty-sequence {
+  color: #6c757d;
+  text-align: center;
+  padding: 30px;
+  font-size: 14px;
+}
+
+/* 组合提示 */
+.combo-hint {
+  margin-top: 10px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  color: white;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* 帧组样式 */
+.frame-group {
+  background: white;
+  border-radius: 8px;
+  padding: 10px;
+  margin-bottom: 10px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s;
+}
+
+.frame-group:hover {
+  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+}
+
+.generate-btn:hover:not(:disabled) {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: translateX(3px);
+}
+
+.frame-group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.group-number {
+  font-size: 13px;
+  font-weight: bold;
+  color: #667eea;
+}
+
+.remove-group-btn {
+  padding: 4px 8px;
+  background: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.2s;
+}
+
+.remove-group-btn:hover { background: #c82333; transform: scale(1.1); }
+
+.frame-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.action-in-frame {
+  display: flex;
+  align-items: center;
+  padding: 6px 10px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  font-size: 13px;
+  transition: all 0.2s;
+}
+
+.action-in-frame:hover {
+  background: #e9ecef;
+  transform: translateX(3px);
+}
+
+.action-dot {
+  color: #667eea;
+  font-size: 12px;
+  margin-right: 8px;
+}
+
+.action-name {
+  flex: 1;
+  color: #333;
+  font-weight: 500;
+}
+
+.remove-action-btn {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #ffc107;
+  color: #000;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.2s;
+}
+
+.remove-action-btn:hover {
+  background: #ffca2c;
+  transform: scale(1.1);
+}
+
+/* 高级提示 */
+.advanced-tips {
+  margin-top: 15px;
+  padding: 12px;
+  background: #fff3cd;
+  border-left: 3px solid #ffc107;
+  border-radius: 6px;
+}
+
+/* 高级提示 */
+.advanced-tips {
+  margin-top: 15px;
+  padding: 12px;
+  background: #fff3cd;
+  border-left: 3px solid #ffc107;
+  border-radius: 6px;
+}
+
+.advanced-tips p {
+  margin: 0 0 8px 0;
+  font-size: 13px;
+  color: #856404;
+}
+
+.advanced-tips ul {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 12px;
+  color: #856404;
+  line-height: 1.6;
+}
+
+.advanced-tips li {
+  margin-bottom: 4px;
+}
+
+/* 生成按钮样式 */
+.generate-btn {
+  flex: 1;
+  padding: 12px 20px;
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+}
+
+.generate-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(40, 167, 69, 0.4);
+}
+
+.generate-btn:disabled {
+  background: #6c757d;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.clear-btn {
+  padding: 12px 20px;
+  background: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.clear-btn:hover {
+  background: #c82333;
+  transform: translateY(-2px);
+}
+
+/* 组合控制按钮 */
+.combo-controls {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+.lock-frame-btn {
+  flex: 1;
+  min-width: 200px;
+  padding: 8px 16px;
+  background: linear-gradient(135deg, #ffc107 0%, #ffca2c 100%);
+  color: #000;
+  border:none;
+  border-radius: 6px;
+  font-size:13px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(255, 193, 7, 0.3);
+}
+
+.lock-frame-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 193, 7, 0.4);
+}
+
+.lock-frame-btn:disabled {
+  background: #e0e0e0;
+  cursor:not-allowed;
+  opacity: 0.6;
+}
+
+.undo-btn {
+  padding: 8px 16px;
+  background: #6c757d;
+  color: white;
+  border:none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.undo-btn:hover:not(:disabled) {
+  background: #5a6268;
+  transform: translateY(-2px);
+}
+
+.undo-btn:disabled {
+  background: #e0e0e0;
+  cursor:not-allowed;
+  opacity: 0.6;
+}
+
+/* 组合提示 */
+.combo-hint {
+  margin-top: 10px;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  color: white;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.combo-hint strong {
+  color: #ffca2c;
 }
 </style>
