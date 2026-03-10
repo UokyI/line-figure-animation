@@ -107,6 +107,44 @@
           💫 双手交叠
         </button>
       </div>
+      
+      <!-- 第四排：新增腿部动作 -->
+      <div class="action-buttons" style="margin-top: 12px;">
+        <button @click="applyQuickAction('headStraight')" class="action-btn">
+          🧍 头伸直（默认）
+        </button>
+        <button @click="applyQuickAction('leftLegBend')" class="action-btn">
+          🦵 左腿弯曲
+        </button>
+        <button @click="applyQuickAction('leftLegStraight')" class="action-btn">
+          🦵 左腿伸直
+        </button>
+        <button @click="applyQuickAction('rightLegBend')" class="action-btn">
+          🦵 右腿弯曲
+        </button>
+        <button @click="applyQuickAction('rightLegStraight')" class="action-btn">
+          🦵 右腿伸直
+        </button>
+      </div>
+      
+      <!-- 第五排：跑步和特殊姿势 -->
+      <div class="action-buttons" style="margin-top: 12px;">
+        <button @click="applyQuickAction('running')" class="action-btn">
+          🏃 跑步
+        </button>
+        <button @click="applyQuickAction('leftArmHorn')" class="action-btn">
+          📯 左手喇叭状
+        </button>
+        <button @click="applyQuickAction('rightArmHorn')" class="action-btn">
+          📯 右手喇叭状
+        </button>
+        <button @click="applyQuickAction('hipsLeft')" class="action-btn">
+          💃 胯骨左倾
+        </button>
+        <button @click="applyQuickAction('hipsRight')" class="action-btn">
+          💃 胯骨右倾
+        </button>
+      </div>
     </div>
 
     <!-- 智能动作序列生成器 -->
@@ -120,40 +158,46 @@
           <!-- 动作分类标签 -->
           <div class="action-categories">
             <button 
-              :class="['category-btn', { active: categoryFilter === 'all' }]"
-              @click="categoryFilter = 'all'"
+              :class="['category-btn', { active: categoryFilter === '全部' }]"
+              @click="categoryFilter= '全部'"
             >
               全部
             </button>
             <button 
-              :class="['category-btn', { active: categoryFilter === 'hand' }]"
-              @click="categoryFilter = 'hand'"
+              :class="['category-btn', { active: categoryFilter === '手部' }]"
+              @click="categoryFilter= '手部'"
             >
               👋 手部
             </button>
             <button 
-              :class="['category-btn', { active: categoryFilter === 'arm' }]"
-              @click="categoryFilter= 'arm'"
+              :class="['category-btn', { active: categoryFilter === '手臂' }]"
+              @click="categoryFilter= '手臂'"
             >
               💪 手臂
             </button>
             <button 
-              :class="['category-btn', { active: categoryFilter === 'head' }]"
-              @click="categoryFilter = 'head'"
+              :class="['category-btn', { active: categoryFilter === '头部' }]"
+              @click="categoryFilter= '头部'"
             >
               😮 头部
             </button>
             <button 
-              :class="['category-btn', { active: categoryFilter === 'leg' }]"
-              @click="categoryFilter = 'leg'"
+              :class="['category-btn', { active: categoryFilter === '腿部' }]"
+              @click="categoryFilter= '腿部'"
             >
-              👣 腿部
+              🦵 腿部
             </button>
             <button 
-              :class="['category-btn', { active: categoryFilter === 'body' }]"
-              @click="categoryFilter= 'body'"
+              :class="['category-btn', { active: categoryFilter === '躯干' }]"
+              @click="categoryFilter= '躯干'"
             >
-              🏃 腰部
+              💃 躯干
+            </button>
+            <button 
+              :class="['category-btn', { active: categoryFilter === '特殊' }]"
+              @click="categoryFilter= '特殊'"
+            >
+              🏃 特殊
             </button>
           </div>
           
@@ -473,6 +517,71 @@ const quickActions = {
    rightShoulder: { x: 440, y: 210 },
    rightElbow: { x: 460, y: 270 },
    rightWrist: { x: 430, y: 320 }
+  },
+  // ========== 新增动作 ==========
+  // 头伸直（默认正常状态）
+  headStraight: {
+   head: { x: 400, y: 150 },
+   neck: { x: 400, y: 180 }
+  },
+  // 左腿弯曲
+  leftLegBend: {
+  leftKnee: { x: 360, y: 420 },
+  leftAnkle: { x: 380, y: 480 }
+  },
+  // 左腿伸直
+  leftLegStraight: {
+  leftKnee: { x: 380, y: 400 },
+  leftAnkle: { x: 380, y: 490 }
+  },
+  // 右腿弯曲
+  rightLegBend: {
+   rightKnee: { x: 440, y: 420 },
+   rightAnkle: { x: 420, y: 480 }
+  },
+  // 右腿伸直
+  rightLegStraight: {
+   rightKnee: { x: 420, y: 400 },
+   rightAnkle: { x: 420, y: 490 }
+  },
+  // 跑步姿势
+  running: {
+   head: { x: 400, y: 140 },
+   neck: { x: 400, y: 170 },
+   chest: { x: 410, y: 220 },
+  leftShoulder: { x: 380, y: 200 },
+  leftElbow: { x: 350, y: 240 },
+  leftWrist: { x: 330, y: 280 },
+   rightShoulder: { x: 430, y: 190 },
+   rightElbow: { x: 460, y: 230 },
+   rightWrist: { x: 480, y: 270 },
+  leftKnee: { x: 370, y: 410 },
+  leftAnkle: { x: 360, y: 470 },
+   rightKnee: { x: 440, y: 390 },
+   rightAnkle: { x: 450, y: 450 },
+   hips: { x: 400, y: 310 }
+  },
+  // 左手臂向上向内呈半圆状（喇叭状）
+  leftArmHorn: {
+  leftShoulder: { x: 360, y: 200 },
+  leftElbow: { x: 340, y: 170 },
+  leftWrist: { x: 360, y: 140 }
+  },
+  // 右手臂向上向内呈半圆状（喇叭状）
+  rightArmHorn: {
+   rightShoulder: { x: 440, y: 200 },
+   rightElbow: { x: 460, y: 170 },
+   rightWrist: { x: 440, y: 140 }
+  },
+  // 胯骨左倾
+  hipsLeft: {
+   hips: { x: 380, y: 300 },
+   chest: { x: 410, y: 240 }
+  },
+  // 胯骨右倾
+  hipsRight: {
+   hips: { x: 420, y: 300 },
+   chest: { x: 390, y: 240 }
   }
 };
 
@@ -925,28 +1034,14 @@ const applyQuickAction= (actionName) => {
 const sequence = ref([]); // 数组元素：{ actionKey, category, isNewFrame }
 const targetBeats = ref(4);
 const transitionType = ref('smooth');
-const categoryFilter = ref('all');
+const categoryFilter= ref('全部');
 
-// 动作分类定义
-const actionCategories = {
-  hand: ['leftHandHip', 'rightHandHip', 'raiseRightHand', 'raiseLeftHand', 'handsDownCircle'],
-  arm: ['rightArmStraight', 'leftArmStraight'],
-  head: ['shakeHeadLeft', 'shakeHeadRight'],
-  leg: ['feetTogether', 'feetApart'],
-  body: ['bendLeft', 'bendRight']
-};
-
-// 获取动作所属分类
-const getActionCategory = (actionKey) => {
-  for (let [category, actions] of Object.entries(actionCategories)) {
-  if (actions.includes(actionKey)) return category;
-  }
-  return 'hand';
-};
+// 从 quickActions.js 导入分类定义
+import { actionCategories, getActionCategory } from '@/utils/quickActions';
 
 // 根据分类筛选动作
 const filteredQuickActions = computed(() => {
-  if (categoryFilter.value === 'all') {
+  if (categoryFilter.value === '全部') {
   return quickActions;
   }
   
@@ -955,7 +1050,7 @@ const filteredQuickActions = computed(() => {
   
   for (let key of categoryActions) {
   if (quickActions[key]) {
-     filtered[key] = quickActions[key];
+    filtered[key] = quickActions[key];
     }
   }
   
@@ -1083,19 +1178,30 @@ const clearLastAction = () => {
 // 获取动作名称
 const getActionName = (actionKey) => {
   const names = {
-   leftHandHip: '左手叉腰',
+    leftHandHip: '左手叉腰',
     rightHandHip: '右手叉腰',
     raiseRightHand: '抬右手',
     raiseLeftHand: '抬左手',
     rightArmStraight: '右手伸直',
-   leftArmStraight: '左手伸直',
+    leftArmStraight: '左手伸直',
     shakeHeadLeft: '向左摇头',
     shakeHeadRight: '向右摇头',
     feetTogether: '双脚收齐',
     feetApart: '双脚打开',
     bendLeft: '向左弯腰',
     bendRight: '向右弯腰',
-    handsDownCircle: '双手交叠'
+    handsDownCircle: '双手交叠',
+    // 新增动作
+    headStraight: '头伸直（默认）',
+    leftLegBend: '左腿弯曲',
+    leftLegStraight: '左腿伸直',
+    rightLegBend: '右腿弯曲',
+    rightLegStraight: '右腿伸直',
+    running: '跑步',
+    leftArmHorn: '左手喇叭状',
+    rightArmHorn: '右手喇叭状',
+    hipsLeft: '胯骨左倾',
+    hipsRight: '胯骨右倾'
   };
   return names[actionKey] || actionKey;
 };
@@ -1103,19 +1209,30 @@ const getActionName = (actionKey) => {
 // 获取动作表情符号
 const getActionEmoji = (actionKey) => {
   const emojis = {
-   leftHandHip: '🤘',
+    leftHandHip: '🤘',
     rightHandHip: '🤘',
     raiseRightHand: '🙋',
     raiseLeftHand: '🙋',
     rightArmStraight: '💪',
-   leftArmStraight: '💪',
+    leftArmStraight: '💪',
     shakeHeadLeft: '😮',
     shakeHeadRight: '😮',
     feetTogether: '👣',
     feetApart: '👣',
     bendLeft: '🏃',
     bendRight: '🏃',
-    handsDownCircle: '💫'
+    handsDownCircle: '💫',
+    // 新增动作
+    headStraight: '🧍',
+    leftLegBend: '🦵',
+    leftLegStraight: '🦵',
+    rightLegBend: '🦵',
+    rightLegStraight: '🦵',
+    running: '🏃',
+    leftArmHorn: '📯',
+    rightArmHorn: '📯',
+    hipsLeft: '💃',
+    hipsRight: '💃'
   };
   return emojis[actionKey] || '⚡';
 };
