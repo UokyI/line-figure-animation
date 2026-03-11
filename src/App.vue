@@ -160,60 +160,60 @@
     <!-- 智能动作序列生成器 -->
     <div class="smart-sequence-generator">
       <h3 class="sequence-title">🎬 智能动作序列生成器</h3>
-      
+
       <div class="generator-content">
         <div class="selector-section">
           <label class="selector-label">选择关键动作（按顺序点击）：</label>
-          
+
           <!-- 动作分类标签 -->
           <div class="action-categories">
-            <button 
+            <button
               :class="['category-btn', { active: categoryFilter === '全部' }]"
               @click="categoryFilter= '全部'"
             >
               全部
             </button>
-            <button 
+            <button
               :class="['category-btn', { active: categoryFilter === '手部' }]"
               @click="categoryFilter= '手部'"
             >
               👋 手部
             </button>
-            <button 
+            <button
               :class="['category-btn', { active: categoryFilter === '手臂' }]"
               @click="categoryFilter= '手臂'"
             >
               💪 手臂
             </button>
-            <button 
+            <button
               :class="['category-btn', { active: categoryFilter === '头部' }]"
               @click="categoryFilter= '头部'"
             >
               😮 头部
             </button>
-            <button 
+            <button
               :class="['category-btn', { active: categoryFilter === '腿部' }]"
               @click="categoryFilter= '腿部'"
             >
               🦵 腿部
             </button>
-            <button 
+            <button
               :class="['category-btn', { active: categoryFilter === '躯干' }]"
               @click="categoryFilter= '躯干'"
             >
               💃 躯干
             </button>
-            <button 
+            <button
               :class="['category-btn', { active: categoryFilter === '特殊' }]"
               @click="categoryFilter= '特殊'"
             >
               🏃 特殊
             </button>
           </div>
-          
+
           <div class="action-selector-buttons">
-            <button 
-              v-for="(action, key) in filteredQuickActions" 
+            <button
+              v-for="(action, key) in filteredQuickActions"
               :key="key"
               @click="addToSequence(key)"
               class="sequence-action-btn"
@@ -223,7 +223,7 @@
               {{ getActionEmoji(key) }} {{ getActionName(key) }}
             </button>
           </div>
-          
+
           <div class="combo-controls">
             <button @click="lockCurrentFrame" class="lock-frame-btn" :disabled="sequence.length === 0">
               🔒 锁定当前帧（下一个动作将创建新帧）
@@ -232,7 +232,7 @@
               ↩️ 撤销上一步
             </button>
           </div>
-          
+
           <div class="combo-hint">
             💡 <strong>组合技巧：</strong><br>
             • 连续点击的动作会自动组合到同一帧<br>
@@ -240,16 +240,16 @@
             • 例如：点击"双脚分开" → "抬右手" = 组合姿势
           </div>
         </div>
-        
+
         <div class="sequence-preview">
           <div class="sequence-list">
             <div v-if="sequence.length === 0" class="empty-sequence">
               👆 请点击上方按钮选择动作
             </div>
-            
+
             <!-- 显示关键帧组 -->
-            <div 
-              v-for="(frameGroup, groupIndex) in groupedSequence" 
+            <div
+              v-for="(frameGroup, groupIndex) in groupedSequence"
               :key="groupIndex"
               class="frame-group"
             >
@@ -259,21 +259,31 @@
                   🗑️ 删除此帧
                 </button>
               </div>
-              
+
               <div class="frame-actions">
-                <div 
-                  v-for="(actionKey, actionIndex) in frameGroup" 
-                  :key="actionIndex"
-                  class="action-in-frame"
-                >
-                  <span class="action-dot">●</span>
-                  <span class="action-name">{{ getActionName(actionKey) }}</span>
-                  <button @click="removeActionFromFrame(groupIndex, actionIndex)" class="remove-action-btn">×</button>
+                <div class="actions-column">
+                  <div
+                    v-for="(actionKey, actionIndex) in frameGroup"
+                    :key="actionIndex"
+                    class="action-in-frame"
+                  >
+                    <span class="action-dot">●</span>
+                    <span class="action-name">{{ getActionName(actionKey) }}</span>
+                    <button @click="removeActionFromFrame(groupIndex, actionIndex)" class="remove-action-btn">×</button>
+                  </div>
+                </div>
+                
+                <!-- 关键帧动作预览 -->
+                <div class="preview-column">
+                  <FramePreview 
+                    :frame-group="frameGroup"
+                    :quick-actions="quickActions"
+                  />
                 </div>
               </div>
             </div>
           </div>
-          
+
           <div class="sequence-controls">
             <div class="control-row">
               <label>拍数：</label>
@@ -285,7 +295,7 @@
               </select>
               <span class="info-text">（每拍 1 秒，共{{ targetBeats }}秒）</span>
             </div>
-            
+
             <div class="control-row">
               <label>过渡方式：</label>
               <select v-model="transitionType" class="transition-select">
@@ -294,7 +304,7 @@
                 <option value="ease">缓入缓出</option>
               </select>
             </div>
-            
+
             <div class="button-row">
               <button @click="generateSequence" class="generate-btn" :disabled="sequence.length < 1">
                 ✨ 生成{{ targetBeats }}拍动画
@@ -303,7 +313,7 @@
                 🗑️ 清空序列
               </button>
             </div>
-            
+
             <div class="advanced-tips">
               <p><strong>💡 使用技巧：</strong></p>
               <ul>
@@ -394,7 +404,8 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, nextTick, watch } from 'vue';
+import { ref, computed, onMounted, nextTick, watch, watchEffect } from 'vue';
+import FramePreview from './components/FramePreview.vue';
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 import { toBlobURL } from '@ffmpeg/util';
 
@@ -415,6 +426,9 @@ const showGrid = ref(true);
 
 const selectedJoint = ref(null);
 const hoverJoint = ref(null);
+
+// 计算总帧数
+const totalFrames = computed(() => frames.value.length);
 
 const defaultPose = {
   head: { x: 400, y: 150 },
@@ -821,6 +835,13 @@ watch(frames, () => {
   });
 }, { deep: true });
 
+// 监听当前帧变化，更新实时预览
+watch(currentFrame, () => {
+  nextTick(() => {
+    setTimeout(() => updateRealtimePreview(), 10);
+  });
+});
+
 const createDefaultPose = () => JSON.parse(JSON.stringify(defaultPose));
 
 const setThumbnailRef = (el, index) => {
@@ -829,6 +850,7 @@ const setThumbnailRef = (el, index) => {
    setTimeout(() => updateThumbnail(index), 50);
   }
 };
+
 
 const updateThumbnail = (index) => {
   if (!thumbnailCanvases.value[index]) return;
@@ -910,51 +932,101 @@ const onMouseUp = () => {
 };
 
 const drawStickman = (context, pose, options = {}) => {
-  const { scale = 1, offsetX = 0, offsetY = 0, drawJoints = true, jointRadius = 10 } = options;
-  
-  context.strokeStyle = '#333';
-  context.lineWidth = Math.max(2, 4 * scale);
-  context.lineCap = 'round';
-  context.lineJoin = 'round';
-  
-  const bones = [
-    ['head', 'neck'], ['neck', 'chest'], ['neck', 'leftShoulder'], ['neck', 'rightShoulder'],
-    ['chest', 'hips'], ['leftShoulder', 'leftElbow'], ['leftElbow', 'leftWrist'],
-    ['rightShoulder', 'rightElbow'], ['rightElbow', 'rightWrist'],
-    ['hips', 'leftHip'], ['hips', 'rightHip'],
-    ['leftHip', 'leftKnee'], ['leftKnee', 'leftAnkle'],
-    ['rightHip', 'rightKnee'], ['rightKnee', 'rightAnkle']
-  ];
-  
-  bones.forEach(([joint1, joint2]) => {
-    if (pose[joint1] && pose[joint2]) {
-     context.beginPath();
-     context.moveTo(pose[joint1].x * scale + offsetX, pose[joint1].y * scale + offsetY);
-     context.lineTo(pose[joint2].x * scale + offsetX, pose[joint2].y * scale + offsetY);
-     context.stroke();
-    }
-  });
-  
-  if (pose.head) {
-   context.fillStyle = '#fff';
-   context.strokeStyle = '#333';
-   context.lineWidth = Math.max(2, 3 * scale);
-   context.beginPath();
-   context.arc(pose.head.x * scale + offsetX, pose.head.y * scale + offsetY, 25 * scale, 0, Math.PI * 2);
-   context.fill();
-   context.stroke();
-  }
-  
-  if (drawJoints) {
-   for (let jointId in pose) {
-     const joint = pose[jointId];
-     context.fillStyle = '#ffffff';
+  const { scale = 1, offsetX = 0, offsetY = 0, drawJoints = true, jointRadius = 10, isPreview = false } = options;
+
+  // 对于预览模式，使用固定的线条宽度和关节点大小
+  if (isPreview) {
+    context.strokeStyle = '#333';
+    context.lineWidth = 1; // 固定线条宽度
+    context.lineCap = 'round';
+    context.lineJoin = 'round';
+
+    const bones = [
+      ['head', 'neck'], ['neck', 'chest'], ['neck', 'leftShoulder'], ['neck', 'rightShoulder'],
+      ['chest', 'hips'], ['leftShoulder', 'leftElbow'], ['leftElbow', 'leftWrist'],
+      ['rightShoulder', 'rightElbow'], ['rightElbow', 'rightWrist'],
+      ['hips', 'leftHip'], ['hips', 'rightHip'],
+      ['leftHip', 'leftKnee'], ['leftKnee', 'leftAnkle'],
+      ['rightHip', 'rightKnee'], ['rightKnee', 'rightAnkle']
+    ];
+
+    bones.forEach(([joint1, joint2]) => {
+      if (pose[joint1] && pose[joint2]) {
+       context.beginPath();
+       context.moveTo(pose[joint1].x * scale + offsetX, pose[joint1].y * scale + offsetY);
+       context.lineTo(pose[joint2].x * scale + offsetX, pose[joint2].y * scale + offsetY);
+       context.stroke();
+      }
+    });
+
+    if (pose.head) {
+     context.fillStyle = '#fff';
      context.strokeStyle = '#333';
-     context.lineWidth = Math.max(1, 2 * scale);
+     context.lineWidth = 1; // 固定线条宽度
      context.beginPath();
-     context.arc(joint.x * scale + offsetX, joint.y * scale + offsetY, jointRadius * scale, 0, Math.PI * 2);
+     context.arc(pose.head.x * scale + offsetX, pose.head.y * scale + offsetY, 3, 0, Math.PI * 2); // 固定头部大小
      context.fill();
      context.stroke();
+    }
+
+    if (drawJoints) {
+     for (let jointId in pose) {
+       const joint = pose[jointId];
+       context.fillStyle = '#ffffff';
+       context.strokeStyle = '#333';
+       context.lineWidth = 1; // 固定线条宽度
+       context.beginPath();
+       context.arc(joint.x * scale + offsetX, joint.y * scale + offsetY, 2, 0, Math.PI * 2); // 固定关节点大小
+       context.fill();
+       context.stroke();
+      }
+    }
+  } else {
+    // 原有的非预览模式绘制逻辑
+    context.strokeStyle = '#333';
+    context.lineWidth = Math.max(2, 4 * scale);
+    context.lineCap = 'round';
+    context.lineJoin = 'round';
+
+    const bones = [
+      ['head', 'neck'], ['neck', 'chest'], ['neck', 'leftShoulder'], ['neck', 'rightShoulder'],
+      ['chest', 'hips'], ['leftShoulder', 'leftElbow'], ['leftElbow', 'leftWrist'],
+      ['rightShoulder', 'rightElbow'], ['rightElbow', 'rightWrist'],
+      ['hips', 'leftHip'], ['hips', 'rightHip'],
+      ['leftHip', 'leftKnee'], ['leftKnee', 'leftAnkle'],
+      ['rightHip', 'rightKnee'], ['rightKnee', 'rightAnkle']
+    ];
+
+    bones.forEach(([joint1, joint2]) => {
+      if (pose[joint1] && pose[joint2]) {
+       context.beginPath();
+       context.moveTo(pose[joint1].x * scale + offsetX, pose[joint1].y * scale + offsetY);
+       context.lineTo(pose[joint2].x * scale + offsetX, pose[joint2].y * scale + offsetY);
+       context.stroke();
+      }
+    });
+
+    if (pose.head) {
+     context.fillStyle = '#fff';
+     context.strokeStyle = '#333';
+     context.lineWidth = Math.max(2, 3 * scale);
+     context.beginPath();
+     context.arc(pose.head.x * scale + offsetX, pose.head.y * scale + offsetY, 25 * scale, 0, Math.PI * 2);
+     context.fill();
+     context.stroke();
+    }
+
+    if (drawJoints) {
+     for (let jointId in pose) {
+       const joint = pose[jointId];
+       context.fillStyle = '#ffffff';
+       context.strokeStyle = '#333';
+       context.lineWidth = Math.max(1, 2 * scale);
+       context.beginPath();
+       context.arc(joint.x * scale + offsetX, joint.y * scale + offsetY, jointRadius * scale, 0, Math.PI * 2);
+       context.fill();
+       context.stroke();
+      }
     }
   }
 };
@@ -1064,6 +1136,11 @@ const targetBeats = ref(4);
 const transitionType = ref('smooth');
 const categoryFilter= ref('全部');
 
+// 监听序列变化，更新预览 - 现在由FramePreview组件自行处理
+watch(sequence, async () => {
+  // 序列变化时，FramePreview组件会自动更新
+}, { deep: true });
+
 // 从 quickActions.js 导入分类定义
 import { actionCategories, getActionCategory } from '@/utils/quickActions';
 
@@ -1089,11 +1166,11 @@ const filteredQuickActions = computed(() => {
 const groupedSequence = computed(() => {
   const groups = [];
   let currentGroup = [];
-  
+
   sequence.value.forEach((item) => {
     // 跳过虚拟标记（不显示）
    if (item.isMarker) return;
-    
+
     // 如果是新帧标记或者第一个元素
    if (item.isNewFrame || currentGroup.length === 0) {
      if (currentGroup.length > 0) {
@@ -1105,13 +1182,14 @@ const groupedSequence = computed(() => {
       currentGroup.push(item.actionKey);
     }
   });
-  
+
   if (currentGroup.length > 0) {
     groups.push(currentGroup);
   }
-  
+
   return groups;
 });
+
 
 // 添加到序列 - 默认不创建新帧（实现组合）
 const addToSequence = (actionKey) => {
@@ -2000,18 +2078,32 @@ canvas { cursor: pointer; background: #fff; }
 
 .frame-actions {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
+  flex-direction: row;
+  gap: 10px;
+  align-items: flex-start; /* 确保内容顶部对齐 */
+}
+
+.actions-column {
+  flex: 1;
+  min-width: 150px; /* 设置最小宽度，确保有足够空间显示动作名称 */
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.preview-column {
+  flex: 0 0 auto; /* 不伸缩，保持原始大小 */
 }
 
 .action-in-frame {
   display: flex;
   align-items: center;
-  padding: 6px 10px;
+  padding: 4px 8px;
   background: #f8f9fa;
   border-radius: 6px;
-  font-size: 13px;
+  font-size: 12px; /* 减小字体 */
   transition: all 0.2s;
+  flex: 0 0 auto; /* 不伸缩，保持原始大小 */
 }
 
 .action-in-frame:hover {
@@ -2202,5 +2294,55 @@ canvas { cursor: pointer; background: #fff; }
 
 .combo-hint strong {
   color: #ffca2c;
+}
+
+/* 当前关键帧动作指示器 */
+.current-action-indicator {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 6px;
+  border-left: 3px solid #ffca2c;
+}
+
+.indicator-text {
+  display: block;
+  color: #ffca2c;
+  font-size: 12px;
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+
+.current-action-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+}
+
+.current-action-item {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+}
+
+.frame-preview-container {
+  display: inline-block;
+  margin-left: 10px;
+  vertical-align: top;
+  position: relative;
+  border: 1px solid #eee;
+  border-radius: 4px;
+  background: white;
+  padding: 2px;
+}
+
+.frame-preview-canvas {
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  background: white;
+  display: block;
 }
 </style>
