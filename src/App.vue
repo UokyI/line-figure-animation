@@ -51,6 +51,7 @@
       <button @click="pasteFrame" :disabled="!copiedFrame">📋 粘贴帧</button>
       <button @click="resetPose">🔄 重置姿势</button>
       <button @click="refreshThumbnails">🔃 刷新缩略图</button>
+      <button @click="mirrorCurrentFrame" class="mirror-btn">⇆ 镜像</button>
     </div>
 
     <!-- 快速动作列表 -->
@@ -155,7 +156,80 @@
           🫴 右手覆盖左手
         </button>
       </div>
+
+      <!-- 自定义快速动作按钮 -->
+      <div class="action-buttons" style="margin-top: 12px;">
+        <button @click="showCustomActionModal = true" class="action-btn" style="background: linear-gradient(135deg, #ff8a8a 0%, #ff5252 100%);">
+          ✨ 保存当前为自定义动作 (Ctrl+B)
+        </button>
+        <button @click="exportCustomActions" class="action-btn" style="background: linear-gradient(135deg, #a55eea 0%, #764ba2 100%);">
+          📁 导出自定义动作
+        </button>
+        <button @click="triggerImport" class="action-btn" style="background: linear-gradient(135deg, #1dd1a1 0%, #10ac84 100%);">
+          📥 导入自定义动作
+        </button>
+      </div>
+
+      <!-- 显示自定义动作 -->
+      <div v-if="Object.keys(customActions).length > 0" class="action-buttons" style="margin-top: 12px; flex-wrap: wrap;">
+        <button 
+          v-for="(action, name) in customActions" 
+          :key="name"
+          @click="applyQuickAction(name)"
+          class="action-btn"
+          style="background: linear-gradient(135deg, #ffa8a8 0%, #ffd8d8 100%); position: relative;"
+        >
+          🛠️ {{ name }}
+          <span 
+            @click.stop="deleteCustomAction(name)" 
+            style="position: absolute; top: -5px; right: -5px; background: #dc3545; color: white; border-radius: 50%; width: 18px; height: 18px; font-size: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer;"
+            title="删除此自定义动作"
+          >
+            ×
+          </span>
+        </button>
+      </div>
     </div>
+
+    <!-- 自定义动作模态框 -->
+    <div v-if="showCustomActionModal" class="modal-overlay" @click="showCustomActionModal = false">
+      <div class="modal-content" @click.stop style="width: 400px; padding: 25px; background: white; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
+        <h3 style="margin: 0 0 20px 0; color: #333; text-align: center;">✨ 保存自定义动作</h3>
+        
+        <div style="margin-bottom: 20px;">
+          <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #555;">动作名称：</label>
+          <input 
+            v-model="customActionName" 
+            placeholder="例如：我的招牌动作" 
+            style="width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px;"
+          />
+        </div>
+        
+        <div style="display: flex; gap: 12px; justify-content: center;">
+          <button 
+            @click="showCustomActionModal = false" 
+            style="padding: 12px 24px; background: #6c757d; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px;"
+          >
+            取消
+          </button>
+          <button 
+            @click="saveCustomAction" 
+            style="padding: 12px 24px; background: linear-gradient(135deg, #28a745 0%, #20c997 100); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px;"
+          >
+            保存动作
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 隐藏的文件输入用于导入 -->
+    <input 
+      type="file" 
+      ref="importFileInput" 
+      @change="importCustomActions" 
+      accept=".json" 
+      style="display: none;" 
+    />
 
     <!-- 智能动作序列生成器 -->
     <div class="smart-sequence-generator">
@@ -404,7 +478,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, nextTick, watch, watchEffect } from 'vue';
+import { ref, computed, onMounted, onUnmounted, nextTick, watch, watchEffect } from 'vue';
 import FramePreview from './components/FramePreview.vue';
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 import { toBlobURL } from '@ffmpeg/util';
@@ -1347,98 +1421,343 @@ const getActionEmoji = (actionKey) => {
   return emojis[actionKey] || '⚡';
 };
 
+// 自定义快速动作功能
+const customActions = ref({});
+const customActionName = ref('');
+const showCustomActionModal = ref(false);
+
+// 加载自定义动作
+const loadCustomActions = () => {
+  const saved = localStorage.getItem('customActions');
+  if (saved) {
+    customActions.value = JSON.parse(saved);
+  }
+};
+
+// 保存自定义动作
+const saveCustomAction = () => {
+  if (!customActionName.value.trim()) {
+    alert('请输入自定义动作名称');
+    return;
+  }
+  
+  // 获取当前姿势作为动作
+  const currentPose = { ...frames.value[currentFrame.value]?.pose };
+  if (!currentPose) {
+    alert('当前帧没有有效姿势');
+    return;
+  }
+  
+  // 创建动作对象（只包含与默认姿势不同的关节）
+  const defaultPose = createDefaultPose();
+  const action = {};
+  
+  for (let jointId in currentPose) {
+    if (defaultPose[jointId] && 
+        (Math.abs(currentPose[jointId].x - defaultPose[jointId].x) > 0.1 || 
+         Math.abs(currentPose[jointId].y - defaultPose[jointId].y) > 0.1)) {
+      action[jointId] = { ...currentPose[jointId] };
+    }
+  }
+  
+  // 保存自定义动作
+  customActions.value[customActionName.value.trim()] = action;
+  localStorage.setItem('customActions', JSON.stringify(customActions.value));
+  
+  // 添加到quickActions中
+  quickActions[customActionName.value.trim()] = action;
+  
+  alert(`自定义动作 "${customActionName.value.trim()}" 已保存`);
+  customActionName.value = '';
+  showCustomActionModal.value = false;
+};
+
+// 导出自定义动作
+const exportCustomActions = () => {
+  const dataStr = JSON.stringify(customActions.value, null, 2);
+  const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+  
+  const exportLink = document.createElement('a');
+  exportLink.setAttribute('href', dataUri);
+  exportLink.setAttribute('download', 'custom-actions.json');
+  document.body.appendChild(exportLink);
+  exportLink.click();
+  document.body.removeChild(exportLink);
+};
+
+// 导入自定义动作
+const importCustomActions = (event) => {
+  const file = event.target.files[0];
+  if (!file) return;
+  
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const importedActions = JSON.parse(e.target.result);
+      
+      // 合并导入的动作
+      Object.assign(customActions.value, importedActions);
+      Object.assign(quickActions, importedActions);
+      
+      // 保存到本地存储
+      localStorage.setItem('customActions', JSON.stringify(customActions.value));
+      
+      alert(`成功导入 ${Object.keys(importedActions).length} 个自定义动作`);
+      
+      // 清空文件输入
+      event.target.value = '';
+    } catch (error) {
+      alert('导入失败：文件格式不正确');
+      console.error(error);
+    }
+  };
+  reader.readAsText(file);
+};
+
+// 删除自定义动作
+const deleteCustomAction = (name) => {
+  if (confirm(`确定要删除自定义动作 "${name}" 吗？`)) {
+    // 从自定义动作中删除
+    delete customActions.value[name];
+    
+    // 从quickActions中删除
+    delete quickActions[name];
+    
+    // 保存到本地存储
+    localStorage.setItem('customActions', JSON.stringify(customActions.value));
+    
+    alert(`自定义动作 "${name}" 已删除`);
+  }
+};
+
+// 初始化时加载自定义动作
+loadCustomActions();
+
+// 键盘快捷键处理
+const handleKeyDown = (event) => {
+  // Ctrl+B - 显示保存自定义动作模态框
+  if (event.ctrlKey && event.key.toLowerCase() === 'b') {
+    event.preventDefault();
+    showCustomActionModal.value = true;
+  }
+  
+  // Ctrl+Q - 保存自定义动作（如果模态框已打开且有名称）
+  if (event.ctrlKey && event.key.toLowerCase() === 'q') {
+    event.preventDefault();
+    if (showCustomActionModal.value && customActionName.value.trim()) {
+      saveCustomAction();
+    }
+  }
+  
+  // ESC - 关闭模态框
+  if (event.key === 'Escape') {
+    showCustomActionModal.value = false;
+  }
+};
+
+// 监听键盘事件
+onMounted(() => {
+  window.addEventListener('keydown', handleKeyDown);
+});
+
+// 组件卸载时移除事件监听
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeyDown);
+});
+
+// 触发文件导入
+const triggerImport = () => {
+  // 使用原生DOM操作触发文件输入
+  const fileInput = document.querySelector('input[type="file"]');
+  if (fileInput) {
+    fileInput.click();
+  }
+};
+
+// 重新绘制当前帧
+const redrawCurrentFrame = () => {
+  if (ctx.value) {
+    // 清除画布
+    ctx.value.clearRect(0, 0, canvas.value.width, canvas.value.height);
+    
+    // 绘制网格
+    drawGrid();
+    
+    // 绘制当前帧
+    const currentPose = frames.value[currentFrame.value]?.pose;
+    if (currentPose) {
+      drawStickman(ctx.value, currentPose, { scale: 1, jointRadius: 5 });
+    }
+  }
+};
+
+// 一键镜像功能 - 水平翻转当前帧的姿势
+const mirrorCurrentFrame = () => {
+  const currentPose = frames.value[currentFrame.value]?.pose;
+  if (!currentPose) return;
+
+  // 创建镜像后的姿势
+  const mirroredPose = {};
+  
+  // 定义需要镜像的关节对
+  const jointPairs = [
+    ['leftShoulder', 'rightShoulder'],
+    ['leftElbow', 'rightElbow'],
+    ['leftWrist', 'rightWrist'],
+    ['leftHip', 'rightHip'],
+    ['leftKnee', 'rightKnee'],
+    ['leftAnkle', 'rightAnkle'],
+    ['leftHand', 'rightHand'],
+    ['leftFoot', 'rightFoot']
+  ];
+  
+  // 复制原始姿势
+  for (let jointId in currentPose) {
+    mirroredPose[jointId] = { ...currentPose[jointId] };
+  }
+  
+  // 应用镜像变换 - 水平翻转
+  const centerX = 200; // 假设中心线在x=200处（可根据实际画布调整）
+  
+  // 首先计算所有关节的平均x坐标作为参考中心
+  let sumX = 0;
+  let count = 0;
+  for (let jointId in currentPose) {
+    sumX += currentPose[jointId].x;
+    count++;
+  }
+  const actualCenterX = count > 0 ? sumX / count : centerX;
+  
+  // 交换左右对称关节的位置（如果它们存在）
+  for (const [leftJoint, rightJoint] of jointPairs) {
+    if (mirroredPose[leftJoint] && mirroredPose[rightJoint]) {
+      // 交换左右关节的位置
+      const temp = { ...mirroredPose[leftJoint] };
+      mirroredPose[leftJoint] = { ...mirroredPose[rightJoint] };
+      mirroredPose[rightJoint] = temp;
+    }
+  }
+  
+  // 对所有关节进行水平镜像（包括交换后的关节）
+  for (let jointId in mirroredPose) {
+    // 计算相对于中心的偏移量，然后取反
+    const offset = mirroredPose[jointId].x - actualCenterX;
+    mirroredPose[jointId].x = actualCenterX - offset;
+  }
+  
+  // 更新当前帧的姿势
+  frames.value[currentFrame.value].pose = mirroredPose;
+  
+  // 重新绘制画布
+  nextTick(() => {
+    redrawCurrentFrame();
+  });
+  
+  // 刷新缩略图
+  refreshThumbnails();
+};
+
 // 生成动作序列 - 支持组合动作
 const generateSequence = async () => {
   if (groupedSequence.value.length < 2) {
    alert('请至少选择 2 个关键帧来生成动画');
    return;
   }
-  
+
   const totalFrames = targetBeats.value * fps.value; // 总帧数 = 拍数 × FPS
-  const segmentFrames = Math.floor(totalFrames / (groupedSequence.value.length- 1)); // 每两个关键帧之间的帧数
-  
-  console.log(`开始生成 ${targetBeats.value}拍动画，共${totalFrames}帧，关键帧数：${groupedSequence.value.length}，分段帧数：${segmentFrames}`);
-  
+
+  console.log(`开始生成 ${targetBeats.value}拍动画，共${totalFrames}帧，关键帧数：${groupedSequence.value.length}`);
+
   // 保存原始帧数据
   const originalFrames = JSON.parse(JSON.stringify(frames.value));
   const originalCurrentFrame = currentFrame.value;
-  
-  // 清除所有帧，只保留第一帧
-  frames.value = [{ pose: createDefaultPose() }];
-  currentFrame.value = 0;
+
+  // 清除所有帧，从默认姿势开始
+  frames.value = [];
   
   try {
-   // 为每个关键帧生成过渡帧
+   // 计算总的过渡段数（关键帧数-1）
+   const totalTransitions = groupedSequence.value.length - 1;
+   // 计算每两个关键帧之间的过渡帧数
+   const transitionFramesPerSegment = Math.max(1, Math.floor((totalFrames - groupedSequence.value.length) / totalTransitions));
+   
+   // 预计算所有关键帧的目标姿势
+   const keyframePoses = [];
    for (let i = 0; i < groupedSequence.value.length; i++) {
-   const frameGroup = groupedSequence.value[i];
-
-    if (i === 0) {
-      // 第一个关键帧：直接应用所有动作的组合，并保持一段时间
-      const targetPose = createDefaultPose();
-      frameGroup.forEach(actionKey => {
-        const action = quickActions[actionKey];
-        applyQuickActionToPose(targetPose, action);
-      });
-      
-      // 为第一个关键帧创建多帧以保持该姿势
-      const frameCount = Math.max(1, Math.floor(segmentFrames / 2)); // 第一个关键帧保持一半的时间
-      
-      for (let j = 0; j < frameCount; j++) {
-        frames.value.push({ pose: { ...JSON.parse(JSON.stringify(targetPose)) } }); // 深拷贝
-        
-        const newFrameIndex = frames.value.length - 1;
-        await nextTick();
-        updateThumbnail(newFrameIndex);
-      }
+     const frameGroup = groupedSequence.value[i];
+     const targetPose = createDefaultPose();
+     frameGroup.forEach(actionKey => {
+       const action = quickActions[actionKey];
+       applyQuickActionToPose(targetPose, action);
+     });
+     keyframePoses.push(targetPose);
+   }
+   
+   // 从默认姿势开始
+   let currentPose = createDefaultPose();
+   
+   // 为每个关键帧生成过渡
+   for (let i = 0; i < groupedSequence.value.length; i++) {
+     const targetPose = keyframePoses[i];
+     
+     if (i === 0) {
+       // 第一个关键帧：从默认姿势过渡到第一个关键帧姿势
+       for (let j = 0; j <= transitionFramesPerSegment; j++) {
+         const progress = j / transitionFramesPerSegment;
+         const easedProgress = easeFunction(progress, transitionType.value);
+         
+         const newPose = interpolatePose(currentPose, targetPose, easedProgress);
+         frames.value.push({ pose: newPose });
+         
+         const newFrameIndex = frames.value.length - 1;
+         await nextTick();
+         updateThumbnail(newFrameIndex);
+       }
      } else {
-      // 后续关键帧：生成过渡帧
-    const prevPose = frames.value[frames.value.length- 1].pose;
-
-      // 如果是最后一个关键帧，确保使用完整的拍数
-    const isLastFrame = i === groupedSequence.value.length- 1;
-    const frameCount = isLastFrame ?
-        (totalFrames - frames.value.length + 1) :
-        segmentFrames;
-
-      // 计算目标姿势（组合该帧的所有动作）
-    const targetPose = createDefaultPose();
-    frameGroup.forEach(actionKey => {
-      const action= quickActions[actionKey];
-        applyQuickActionToPose(targetPose, action);
-      });
-
-      // 生成渐变过渡帧
-      for (let j = 1; j <= frameCount; j++) {
-      const progress = j / frameCount;
-      const easedProgress= easeFunction(progress, transitionType.value);
-
-      const newPose = interpolatePose(prevPose, targetPose, easedProgress);
-      frames.value.push({ pose: newPose });
-
-      const newFrameIndex = frames.value.length - 1;
-      await nextTick();
-       updateThumbnail(newFrameIndex);
-      }
+       // 后续关键帧：从前一个关键帧过渡到当前关键帧
+       for (let j = 1; j <= transitionFramesPerSegment; j++) {
+         const progress = j / transitionFramesPerSegment;
+         const easedProgress = easeFunction(progress, transitionType.value);
+         
+         const newPose = interpolatePose(currentPose, targetPose, easedProgress);
+         frames.value.push({ pose: newPose });
+         
+         const newFrameIndex = frames.value.length - 1;
+         await nextTick();
+         updateThumbnail(newFrameIndex);
+       }
      }
+     
+     // 更新当前姿势为当前关键帧的姿势
+     currentPose = { ...targetPose };
 
      // 更新进度提示
-   console.log(`✅ 完成关键帧 ${i + 1}/${groupedSequence.value.length}: ${frameGroup.map(k => getActionName(k)).join(' + ')}`);
-    }
-    
+     console.log(`✅ 完成关键帧 ${i + 1}/${groupedSequence.value.length}: ${groupedSequence.value[i].map(k => getActionName(k)).join(' + ')}`);
+   }
+
+   // 确保总帧数正确 - 用最后一个关键帧的姿势填充剩余帧
+   const lastPose = { ...keyframePoses[keyframePoses.length - 1] };
+   while (frames.value.length < totalFrames) {
+     frames.value.push({ pose: { ...lastPose } });
+     const newFrameIndex = frames.value.length - 1;
+     await nextTick();
+     updateThumbnail(newFrameIndex);
+   }
+
    // 跳转到第一帧
    currentFrame.value = 0;
-  draw();
-   
+   draw();
+
    alert(`✨ 成功生成 ${targetBeats.value}拍动画！共${frames.value.length}帧\n每秒${fps.value}帧，总时长${targetBeats.value}秒`);
-   
+
   } catch (error) {
-  console.error('生成序列失败:', error);
+   console.error('生成序列失败:', error);
    alert('生成序列时出错，请重试');
-   
+
    // 恢复原始数据
-  frames.value = originalFrames;
+   frames.value = originalFrames;
    currentFrame.value = originalCurrentFrame;
-  draw();
+   draw();
   }
 };
 
