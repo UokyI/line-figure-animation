@@ -1371,45 +1371,56 @@ const generateSequence = async () => {
    // 为每个关键帧生成过渡帧
    for (let i = 0; i < groupedSequence.value.length; i++) {
    const frameGroup = groupedSequence.value[i];
-     
+
     if (i === 0) {
-      // 第一个关键帧：直接应用所有动作的组合
-    frameGroup.forEach(actionKey => {
-      const action = quickActions[actionKey];
-        applyQuickActionToPose(frames.value[0].pose, action);
+      // 第一个关键帧：直接应用所有动作的组合，并保持一段时间
+      const targetPose = createDefaultPose();
+      frameGroup.forEach(actionKey => {
+        const action = quickActions[actionKey];
+        applyQuickActionToPose(targetPose, action);
       });
-     updateThumbnail(0);
+      
+      // 为第一个关键帧创建多帧以保持该姿势
+      const frameCount = Math.max(1, Math.floor(segmentFrames / 2)); // 第一个关键帧保持一半的时间
+      
+      for (let j = 0; j < frameCount; j++) {
+        frames.value.push({ pose: { ...JSON.parse(JSON.stringify(targetPose)) } }); // 深拷贝
+        
+        const newFrameIndex = frames.value.length - 1;
+        await nextTick();
+        updateThumbnail(newFrameIndex);
+      }
      } else {
       // 后续关键帧：生成过渡帧
     const prevPose = frames.value[frames.value.length- 1].pose;
-      
+
       // 如果是最后一个关键帧，确保使用完整的拍数
     const isLastFrame = i === groupedSequence.value.length- 1;
-    const frameCount = isLastFrame ? 
-        (totalFrames - frames.value.length + 1) : 
+    const frameCount = isLastFrame ?
+        (totalFrames - frames.value.length + 1) :
         segmentFrames;
-      
+
       // 计算目标姿势（组合该帧的所有动作）
     const targetPose = createDefaultPose();
     frameGroup.forEach(actionKey => {
       const action= quickActions[actionKey];
         applyQuickActionToPose(targetPose, action);
       });
-      
+
       // 生成渐变过渡帧
       for (let j = 1; j <= frameCount; j++) {
       const progress = j / frameCount;
       const easedProgress= easeFunction(progress, transitionType.value);
-        
+
       const newPose = interpolatePose(prevPose, targetPose, easedProgress);
       frames.value.push({ pose: newPose });
-        
+
       const newFrameIndex = frames.value.length - 1;
       await nextTick();
        updateThumbnail(newFrameIndex);
       }
      }
-     
+
      // 更新进度提示
    console.log(`✅ 完成关键帧 ${i + 1}/${groupedSequence.value.length}: ${frameGroup.map(k => getActionName(k)).join(' + ')}`);
     }
@@ -1892,13 +1903,14 @@ canvas { cursor: pointer; background: #fff; }
 .smart-sequence-generator {
   margin: 20px 0;
   padding: 25px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: white; /* 白色背景，提高对比度 */
   border-radius: 12px;
-  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e9ecef;
 }
 
 .sequence-title {
-  color: white;
+  color: #333;
   font-size: 20px;
   font-weight: bold;
   margin: 0 0 20px 0;
@@ -1917,7 +1929,7 @@ canvas { cursor: pointer; background: #fff; }
 }
 
 .selector-label {
-  color: white;
+  color: #333;
   font-size: 14px;
   font-weight: bold;
   display: block;
@@ -1934,9 +1946,9 @@ canvas { cursor: pointer; background: #fff; }
 
 .category-btn {
   padding: 4px 10px;
-  background: rgba(255, 255, 255, 0.7);
-  color: white;
-  border: 1px solid rgba(255, 255, 255, 0.5);
+  background: #e9ecef;
+  color: #495057;
+  border: 1px solid #ced4da;
   border-radius: 12px;
   cursor: pointer;
   font-size: 12px;
@@ -1944,15 +1956,15 @@ canvas { cursor: pointer; background: #fff; }
 }
 
 .category-btn:hover {
-  background: rgba(255, 255, 255, 0.9);
+  background: #dee2e6;
   transform: translateY(-1px);
 }
 
 .category-btn.active {
-  background: white;
-  color: #667eea;
-  border-color: white;
-  box-shadow: 0 2px 8px rgba(255, 255, 255, 0.3);
+  background: #667eea;
+  color: white;
+  border-color: #667eea;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
 }
 
 .action-selector-buttons {
@@ -1966,8 +1978,8 @@ canvas { cursor: pointer; background: #fff; }
 
 .sequence-action-btn {
   padding: 8px 12px;
-  background: rgba(255, 255, 255, 0.9);
-  color: #667eea;
+  background: #f8f9fa;
+  color: #495057;
   border: 2px solid transparent;
   border-radius: 6px;
   cursor: pointer;
@@ -1978,8 +1990,9 @@ canvas { cursor: pointer; background: #fff; }
 
 .sequence-action-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 10px rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
   background: white;
+  border-color: #e9ecef;
 }
 
 .sequence-action-btn.selected {
@@ -1991,7 +2004,8 @@ canvas { cursor: pointer; background: #fff; }
 .sequence-preview {
   flex: 1;
   min-width: 300px;
-  background: rgba(255, 255, 255, 0.95);
+  background: white;
+  border: 1px solid #e9ecef;
   border-radius: 8px;
   padding: 15px;
 }
@@ -2017,11 +2031,12 @@ canvas { cursor: pointer; background: #fff; }
 .combo-hint {
   margin-top: 10px;
   padding: 8px 12px;
-  background: rgba(255, 255, 255, 0.2);
+  background: white; /* 白色背景，最高对比度 */
   border-radius: 6px;
-  color: white;
+  color: black; /* 黑色文字，最高对比度 */
   font-size: 12px;
   line-height: 1.5;
+  border: 1px solid #ced4da;
 }
 
 /* 帧组样式 */
@@ -2099,7 +2114,8 @@ canvas { cursor: pointer; background: #fff; }
   display: flex;
   align-items: center;
   padding: 4px 8px;
-  background: #f8f9fa;
+  background: #e9ecef; /* 更深一点的灰色背景 */
+  color: #212529; /* 深色文字 */
   border-radius: 6px;
   font-size: 12px; /* 减小字体 */
   transition: all 0.2s;
@@ -2119,7 +2135,7 @@ canvas { cursor: pointer; background: #fff; }
 
 .action-name {
   flex: 1;
-  color: #333;
+  color: #212529; /* 更深的颜色 */
   font-weight: 500;
 }
 
