@@ -145,6 +145,16 @@
           💃 胯骨右倾
         </button>
       </div>
+
+      <!-- 第六排：新增双手交叉覆盖动作 -->
+      <div class="action-buttons" style="margin-top: 12px;">
+        <button @click="applyQuickAction('handsCrossLeftOver')" class="action-btn">
+          🫴 左手覆盖右手
+        </button>
+        <button @click="applyQuickAction('handsCrossRightOver')" class="action-btn">
+          🫴 右手覆盖左手
+        </button>
+      </div>
     </div>
 
     <!-- 智能动作序列生成器 -->
@@ -582,6 +592,24 @@ const quickActions = {
   hipsRight: {
    hips: { x: 420, y: 300 },
    chest: { x: 390, y: 240 }
+  },
+  // 左手覆盖右手
+  handsCrossLeftOver: {
+    leftShoulder: { x: 360, y: 210 },  // 左肩保持原位
+    leftElbow: { x: 340, y: 270 },    // 左肘保持原位
+    leftWrist: { x: 430, y: 320 },    // 左腕移到右腕位置（覆盖）
+    rightShoulder: { x: 440, y: 210 }, // 右肩保持原位
+    rightElbow: { x: 460, y: 270 },   // 右肘保持原位
+    rightWrist: { x: 430, y: 320 }    // 右腕保持原位
+  },
+  // 右手覆盖左手
+  handsCrossRightOver: {
+    leftShoulder: { x: 360, y: 210 },  // 左肩保持原位
+    leftElbow: { x: 340, y: 270 },    // 左肘保持原位
+    leftWrist: { x: 370, y: 320 },    // 左腕保持原位
+    rightShoulder: { x: 440, y: 210 }, // 右肩保持原位
+    rightElbow: { x: 460, y: 270 },   // 右肘保持原位
+    rightWrist: { x: 370, y: 320 }    // 右腕移到左腕位置（覆盖）
   }
 };
 
@@ -1201,7 +1229,9 @@ const getActionName = (actionKey) => {
     leftArmHorn: '左手喇叭状',
     rightArmHorn: '右手喇叭状',
     hipsLeft: '胯骨左倾',
-    hipsRight: '胯骨右倾'
+    hipsRight: '胯骨右倾',
+    handsCrossLeftOver: '左手覆盖右手',
+    handsCrossRightOver: '右手覆盖左手'
   };
   return names[actionKey] || actionKey;
 };
@@ -1232,7 +1262,9 @@ const getActionEmoji = (actionKey) => {
     leftArmHorn: '📯',
     rightArmHorn: '📯',
     hipsLeft: '💃',
-    hipsRight: '💃'
+    hipsRight: '💃',
+    handsCrossLeftOver: '🫴',
+    handsCrossRightOver: '🫴'
   };
   return emojis[actionKey] || '⚡';
 };

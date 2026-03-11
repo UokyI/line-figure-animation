@@ -33,6 +33,22 @@ export const quickActions = {
     rightElbow: { x: 460, y: 270 },
     rightWrist: { x: 430, y: 320 }
   },
+  handsCrossLeftOver: {
+    leftShoulder: { x: 360, y: 210 },  // 左肩保持原位
+    leftElbow: { x: 340, y: 270 },    // 左肘保持原位
+    leftWrist: { x: 430, y: 320 },    // 左腕移到右腕位置（覆盖）
+    rightShoulder: { x: 440, y: 210 }, // 右肩保持原位
+    rightElbow: { x: 460, y: 270 },   // 右肘保持原位
+    rightWrist: { x: 430, y: 320 }    // 右腕保持原位
+  },
+  handsCrossRightOver: {
+    leftShoulder: { x: 360, y: 210 },  // 左肩保持原位
+    leftElbow: { x: 340, y: 270 },    // 左肘保持原位
+    leftWrist: { x: 370, y: 320 },    // 左腕保持原位
+    rightShoulder: { x: 440, y: 210 }, // 右肩保持原位
+    rightElbow: { x: 460, y: 270 },   // 右肘保持原位
+    rightWrist: { x: 370, y: 320 }    // 右腕移到左腕位置（覆盖）
+  },
 
   // ========== 手臂伸直动作 ==========
   rightArmStraight: {
@@ -153,7 +169,7 @@ export const quickActions = {
 
 // 动作分类定义（使用中文键名）
 export const actionCategories = {
-  '手部': ['leftHandHip', 'rightHandHip', 'raiseRightHand', 'raiseLeftHand', 'handsDownCircle'],
+  '手部': ['leftHandHip', 'rightHandHip', 'raiseRightHand', 'raiseLeftHand', 'handsDownCircle', 'handsCrossLeftOver', 'handsCrossRightOver'],
   '手臂': ['rightArmStraight', 'leftArmStraight', 'leftArmHorn', 'rightArmHorn'],
   '头部': ['shakeHeadLeft', 'shakeHeadRight', 'headStraight'],
   '腿部': ['feetTogether', 'feetApart', 'leftLegBend', 'leftLegStraight', 'rightLegBend', 'rightLegStraight'],
@@ -193,7 +209,9 @@ export const actionNames = {
   bendRight: '向右弯腰',
   hipsLeft: '胯骨左倾',
   hipsRight: '胯骨右倾',
-  running: '跑步'
+  running: '跑步',
+  handsCrossLeftOver: '左手覆盖右手',
+  handsCrossRightOver: '右手覆盖左手'
 };
 
 // 动作表情符号映射
@@ -220,7 +238,9 @@ export const actionEmojis = {
   bendRight: '🏃',
   hipsLeft: '💃',
   hipsRight: '💃',
-  running: '🏃'
+  running: '🏃',
+  handsCrossLeftOver: '🫴',
+  handsCrossRightOver: '🫴'
 };
 
 // 获取动作名称
