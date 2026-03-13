@@ -154,6 +154,24 @@
   margin-bottom: 10px !important;
 }
 
+/* 自定义动作管理按钮（顶部） */
+.quick-actions-sidebar .custom-action-management {
+  margin-bottom: 14px !important;
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.quick-actions-sidebar .custom-action-management .action-btn-special {
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+.quick-actions-sidebar .custom-action-management .action-btn-export,
+.quick-actions-sidebar .custom-action-management .action-btn-import {
+  width: calc(50% - 6px);
+  flex: 0 0 calc(50% - 6px);
+}
+
 .quick-actions-sidebar .action-btn {
   padding: 8px 12px;
   font-size: 12px;

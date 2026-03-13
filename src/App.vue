@@ -61,21 +61,34 @@
       <!-- 快速动作列表（右侧边栏） -->
       <div class="quick-actions-sidebar">
         <div class="action-buttons-container">
+          <!-- 自定义动作管理按钮（顶部） -->
+          <div class="action-buttons custom-action-management">
+            <button @click="showCustomActionModal = true" class="action-btn action-btn-special">
+              ✨ 保存当前动作
+            </button>
+            <button @click="exportCustomActions" class="action-btn action-btn-export">
+              📁 导出
+            </button>
+            <button @click="triggerImport" class="action-btn action-btn-import">
+              📥 导入
+            </button>
+          </div>
+          
           <!-- 第一排：手部基础动作 -->
-      <div class="action-buttons">
-        <button @click="applyQuickAction('leftHandHip')" class="action-btn">
-          🤘 左手叉腰
-        </button>
-        <button @click="applyQuickAction('rightHandHip')" class="action-btn">
-          🤘 右手叉腰
-        </button>
-        <button @click="applyQuickAction('raiseRightHand')" class="action-btn">
-          🙋 抬右手
-        </button>
-        <button @click="applyQuickAction('raiseLeftHand')" class="action-btn">
-          🙋 抬左手
-        </button>
-      </div>
+          <div class="action-buttons">
+            <button @click="applyQuickAction('leftHandHip')" class="action-btn">
+              🤘 左手叉腰
+            </button>
+            <button @click="applyQuickAction('rightHandHip')" class="action-btn">
+              🤘 右手叉腰
+            </button>
+            <button @click="applyQuickAction('raiseRightHand')" class="action-btn">
+              🙋 抬右手
+            </button>
+            <button @click="applyQuickAction('raiseLeftHand')" class="action-btn">
+              🙋 抬左手
+            </button>
+          </div>
       
       <!-- 第二排：手臂伸直动作 -->
       <div class="action-buttons">
@@ -157,19 +170,6 @@
         </button>
         <button @click="applyQuickAction('handsCrossRightOver')" class="action-btn">
           🫴 右手覆盖左手
-        </button>
-      </div>
-
-      <!-- 自定义快速动作按钮 -->
-      <div class="action-buttons">
-        <button @click="showCustomActionModal = true" class="action-btn action-btn-special">
-          ✨ 保存当前为自定义动作 (Ctrl+B)
-        </button>
-        <button @click="exportCustomActions" class="action-btn action-btn-export">
-          📁 导出自定义动作
-        </button>
-        <button @click="triggerImport" class="action-btn action-btn-import">
-          📥 导入自定义动作
         </button>
       </div>
 
