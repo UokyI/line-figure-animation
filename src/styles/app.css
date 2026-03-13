@@ -1139,6 +1139,32 @@ button {
   background: var(--success-gradient) !important;
 }
 
+/* 动画 JSON 导入导出按钮 */
+.export-json-btn,
+.import-json-btn {
+  padding: 14px 32px;
+  background: var(--primary-gradient);
+  color: var(--white);
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 700;
+  transition: all var(--transition);
+  box-shadow: var(--shadow);
+}
+
+.export-json-btn:hover,
+.import-json-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
+}
+
+/* 导入按钮使用警告色渐变 */
+.import-json-btn {
+  background: var(--warning-gradient) !important;
+}
+
 /* 进度条 */
 .progress {
   text-align: center;
