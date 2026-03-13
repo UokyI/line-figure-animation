@@ -27,55 +27,72 @@
       </div>
     </div>
 
-    <div class="canvas-container">
-      <canvas 
-        ref="canvas" 
-        width="800" 
-        height="600"
-        @mousedown="onMouseDown"
-        @mousemove="onMouseMove"
-        @mouseup="onMouseUp"
-        @mouseleave="onMouseUp"
-      ></canvas>
-    </div>
+    <!-- 主编辑区：画布 + 快速动作（左右布局） -->
+    <div class="main-editor">
+      <div class="canvas-section">
+        <div class="canvas-container">
+          <canvas 
+            ref="canvas" 
+            width="800" 
+            height="600"
+            @mousedown="onMouseDown"
+            @mousemove="onMouseMove"
+            @mouseup="onMouseUp"
+            @mouseleave="onMouseUp"
+          ></canvas>
+        </div>
 
-    <div class="timeline-controls">
-      <button @click="firstFrame">|&lt;</button>
-      <button @click="prevFrame">&lt;</button>
-      <button @click="playAnimation" :disabled="isPlaying">{{ isPlaying ? '播放中...' : '播放' }}</button>
-      <button @click="nextFrame">&gt;</button>
-      <button @click="lastFrame">&gt;|</button>
-      <button @click="addFrame">+ 添加帧</button>
-      <button @click="deleteFrame" :disabled="frames.length <= 1">- 删除帧</button>
-      <button @click="copyFrame">📋 复制帧</button>
-      <button @click="pasteFrame" :disabled="!copiedFrame">📋 粘贴帧</button>
-      <button @click="resetPose">🔄 重置姿势</button>
-      <button @click="refreshThumbnails">🔃 刷新缩略图</button>
-      <button @click="mirrorCurrentFrame" class="mirror-btn">⇆ 镜像</button>
-    </div>
-
-    <!-- 快速动作列表 -->
-    <div class="quick-actions">
-      <h3 class="quick-actions-title">⚡ 快速动作</h3>
-      
-      <!-- 第一排：手部基础动作 -->
-      <div class="action-buttons">
-        <button @click="applyQuickAction('leftHandHip')" class="action-btn">
-          🤘 左手叉腰
-        </button>
-        <button @click="applyQuickAction('rightHandHip')" class="action-btn">
-          🤘 右手叉腰
-        </button>
-        <button @click="applyQuickAction('raiseRightHand')" class="action-btn">
-          🙋 抬右手
-        </button>
-        <button @click="applyQuickAction('raiseLeftHand')" class="action-btn">
-          🙋 抬左手
-        </button>
+        <div class="timeline-controls">
+          <button @click="firstFrame">|&lt;</button>
+          <button @click="prevFrame">&lt;</button>
+          <button @click="playAnimation" :disabled="isPlaying">{{ isPlaying ? '播放中...' : '播放' }}</button>
+          <button @click="nextFrame">&gt;</button>
+          <button @click="lastFrame">&gt;|</button>
+          <button @click="addFrame">+ 添加帧</button>
+          <button @click="deleteFrame" :disabled="frames.length <= 1">- 删除帧</button>
+          <button @click="copyFrame">📋 复制帧</button>
+          <button @click="pasteFrame" :disabled="!copiedFrame">📋 粘贴帧</button>
+          <button @click="resetPose">🔄 重置姿势</button>
+          <button @click="refreshThumbnails">🔃 刷新缩略图</button>
+          <button @click="mirrorCurrentFrame" class="mirror-btn">⇆ 镜像</button>
+        </div>
       </div>
+
+      <!-- 快速动作列表（右侧边栏） -->
+      <div class="quick-actions-sidebar">
+        <h3 class="quick-actions-title">🎯 快速动作</h3>
+        <div class="action-buttons-container">
+          <!-- 自定义动作管理按钮（顶部） -->
+          <div class="action-buttons custom-action-management">
+            <button @click="showCustomActionModal = true" class="action-btn action-btn-special">
+              ✨ 保存当前动作
+            </button>
+            <button @click="exportCustomActions" class="action-btn action-btn-export">
+              📁 导出
+            </button>
+            <button @click="triggerImport" class="action-btn action-btn-import">
+              📥 导入
+            </button>
+          </div>
+          
+          <!-- 第一排：手部基础动作 -->
+          <div class="action-buttons">
+            <button @click="applyQuickAction('leftHandHip')" class="action-btn">
+              🤘 左手叉腰
+            </button>
+            <button @click="applyQuickAction('rightHandHip')" class="action-btn">
+              🤘 右手叉腰
+            </button>
+            <button @click="applyQuickAction('raiseRightHand')" class="action-btn">
+              🙋 抬右手
+            </button>
+            <button @click="applyQuickAction('raiseLeftHand')" class="action-btn">
+              🙋 抬左手
+            </button>
+          </div>
       
       <!-- 第二排：手臂伸直动作 -->
-      <div class="action-buttons" style="margin-top: 12px;">
+      <div class="action-buttons">
         <button @click="applyQuickAction('rightArmStraight')" class="action-btn">
           💪 右手伸直
         </button>
@@ -91,7 +108,7 @@
       </div>
       
       <!-- 第三排：腿部和舞蹈动作 -->
-      <div class="action-buttons" style="margin-top: 12px;">
+      <div class="action-buttons">
         <button @click="applyQuickAction('feetTogether')" class="action-btn">
           👣 双脚收齐
         </button>
@@ -110,7 +127,7 @@
       </div>
       
       <!-- 第四排：新增腿部动作 -->
-      <div class="action-buttons" style="margin-top: 12px;">
+      <div class="action-buttons">
         <button @click="applyQuickAction('headStraight')" class="action-btn">
           🧍 头伸直（默认）
         </button>
@@ -129,7 +146,7 @@
       </div>
       
       <!-- 第五排：跑步和特殊姿势 -->
-      <div class="action-buttons" style="margin-top: 12px;">
+      <div class="action-buttons">
         <button @click="applyQuickAction('running')" class="action-btn">
           🏃 跑步
         </button>
@@ -148,7 +165,7 @@
       </div>
 
       <!-- 第六排：新增双手交叉覆盖动作 -->
-      <div class="action-buttons" style="margin-top: 12px;">
+      <div class="action-buttons">
         <button @click="applyQuickAction('handsCrossLeftOver')" class="action-btn">
           🫴 左手覆盖右手
         </button>
@@ -157,64 +174,52 @@
         </button>
       </div>
 
-      <!-- 自定义快速动作按钮 -->
-      <div class="action-buttons" style="margin-top: 12px;">
-        <button @click="showCustomActionModal = true" class="action-btn" style="background: linear-gradient(135deg, #ff8a8a 0%, #ff5252 100%);">
-          ✨ 保存当前为自定义动作 (Ctrl+B)
-        </button>
-        <button @click="exportCustomActions" class="action-btn" style="background: linear-gradient(135deg, #a55eea 0%, #764ba2 100%);">
-          📁 导出自定义动作
-        </button>
-        <button @click="triggerImport" class="action-btn" style="background: linear-gradient(135deg, #1dd1a1 0%, #10ac84 100%);">
-          📥 导入自定义动作
-        </button>
-      </div>
-
       <!-- 显示自定义动作 -->
-      <div v-if="Object.keys(customActions).length > 0" class="action-buttons" style="margin-top: 12px; flex-wrap: wrap;">
-        <button 
-          v-for="(action, name) in customActions" 
+      <div v-if="Object.keys(customActions).length > 0" class="action-buttons action-buttons-custom">
+        <button
+          v-for="(action, name) in customActions"
           :key="name"
           @click="applyQuickAction(name)"
-          class="action-btn"
-          style="background: linear-gradient(135deg, #ffa8a8 0%, #ffd8d8 100%); position: relative;"
+          class="action-btn action-btn-custom"
         >
           🛠️ {{ name }}
-          <span 
-            @click.stop="deleteCustomAction(name)" 
-            style="position: absolute; top: -5px; right: -5px; background: #dc3545; color: white; border-radius: 50%; width: 18px; height: 18px; font-size: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer;"
+          <span
+            @click.stop="deleteCustomAction(name)"
+            class="custom-action-delete"
             title="删除此自定义动作"
           >
             ×
           </span>
-        </button>
+          </button>
+        </div>
+        </div>
       </div>
     </div>
 
     <!-- 自定义动作模态框 -->
     <div v-if="showCustomActionModal" class="modal-overlay" @click="showCustomActionModal = false">
-      <div class="modal-content" @click.stop style="width: 400px; padding: 25px; background: white; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
-        <h3 style="margin: 0 0 20px 0; color: #333; text-align: center;">✨ 保存自定义动作</h3>
+      <div class="modal-content modal-content-custom" @click.stop>
+        <h3 class="modal-title">✨ 保存自定义动作</h3>
         
-        <div style="margin-bottom: 20px;">
-          <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #555;">动作名称：</label>
-          <input 
-            v-model="customActionName" 
-            placeholder="例如：我的招牌动作" 
-            style="width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px;"
+        <div class="modal-form-group">
+          <label class="modal-label">动作名称：</label>
+          <input
+            v-model="customActionName"
+            class="modal-input"
+            placeholder="例如：我的招牌动作"
           />
         </div>
         
-        <div style="display: flex; gap: 12px; justify-content: center;">
-          <button 
-            @click="showCustomActionModal = false" 
-            style="padding: 12px 24px; background: #6c757d; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px;"
+        <div class="modal-actions">
+          <button
+            @click="showCustomActionModal = false"
+            class="btn btn-cancel"
           >
             取消
           </button>
-          <button 
-            @click="saveCustomAction" 
-            style="padding: 12px 24px; background: linear-gradient(135deg, #28a745 0%, #20c997 100); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px;"
+          <button
+            @click="saveCustomAction"
+            class="btn btn-save"
           >
             保存动作
           </button>
@@ -222,13 +227,22 @@
       </div>
     </div>
 
-    <!-- 隐藏的文件输入用于导入 -->
-    <input 
-      type="file" 
-      ref="importFileInput" 
-      @change="importCustomActions" 
-      accept=".json" 
-      style="display: none;" 
+    <!-- 隐藏的文件输入用于导入自定义动作 -->
+    <input
+      type="file"
+      ref="importFileInput"
+      @change="importCustomActions"
+      accept=".json"
+      style="display: none;"
+    />
+    
+    <!-- 隐藏的文件输入用于导入动画 JSON -->
+    <input
+      type="file"
+      ref="importAnimationFileInput"
+      @change="importAnimationFromJSON"
+      accept=".json"
+      style="display: none;"
     />
 
     <!-- 智能动作序列生成器 -->
@@ -440,16 +454,32 @@
       </div>
       
       <div class="export-buttons">
-        <button 
-          @click="exportVideoWithFFmpeg" 
+        <button
+          @click="exportAnimationAsJSON"
+          class="export-json-btn"
+          title="导出当前动画为 JSON 文件（包含帧数据、设置和自定义动作）"
+        >
+          📤 导出动画 (JSON)
+        </button>
+        
+        <button
+          @click="triggerImportAnimation"
+          class="import-json-btn"
+          title="导入 JSON 文件动画（恢复帧数据、设置和自定义动作）"
+        >
+          📥 导入动画 (JSON)
+        </button>
+        
+        <button
+          @click="exportVideoWithFFmpeg"
           :disabled="isExporting || !ffmpegLoaded"
           class="export-ffmpeg-btn"
         >
           {{ isExporting ? '导出中...' : '导出 MP4 (FFmpeg)' }}
         </button>
         
-        <button 
-          @click="exportVideoWithWebCodecs" 
+        <button
+          @click="exportVideoWithWebCodecs"
           :disabled="isExporting || !webCodecsSupported"
           class="export-webcodecs-btn"
           v-if="webCodecsSupported"
@@ -500,6 +530,10 @@ const showGrid = ref(true);
 
 const selectedJoint = ref(null);
 const hoverJoint = ref(null);
+
+// 文件输入 ref
+const importFileInput = ref(null);
+const importAnimationFileInput = ref(null);
 
 // 计算总帧数
 const totalFrames = computed(() => frames.value.length);
@@ -1528,6 +1562,126 @@ const deleteCustomAction = (name) => {
     
     alert(`自定义动作 "${name}" 已删除`);
   }
+};
+
+// ========== 动画 JSON 导入导出功能 ==========
+
+// 导出动画为 JSON 文件
+const exportAnimationAsJSON = () => {
+  // 创建动画数据对象
+  const animationData = {
+    version: '1.0',
+    name: '线条人物动画',
+    createdAt: new Date().toISOString(),
+    settings: {
+      beats: beats.value,
+      fps: fps.value,
+      canvasWidth: 800,
+      canvasHeight: 600
+    },
+    frames: JSON.parse(JSON.stringify(frames.value)),
+    customActions: JSON.parse(JSON.stringify(customActions.value))
+  };
+  
+  // 生成文件名（带时间戳）
+  const timestamp = new Date().getTime();
+  const fileName = `animation_${timestamp}.json`;
+  
+  // 创建下载链接
+  const dataStr = JSON.stringify(animationData, null, 2);
+  const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
+  
+  const exportLink = document.createElement('a');
+  exportLink.setAttribute('href', dataUri);
+  exportLink.setAttribute('download', fileName);
+  document.body.appendChild(exportLink);
+  exportLink.click();
+  document.body.removeChild(exportLink);
+  
+  console.log(`✅ 动画已导出：${fileName}，共${frames.value.length}帧，${Object.keys(customActions.value).length}个自定义动作`);
+};
+
+// 触发导入动画文件
+const triggerImportAnimation = () => {
+  // 使用 ref 获取文件输入元素
+  if (importAnimationFileInput.value) {
+    importAnimationFileInput.value.click();
+  }
+};
+
+// 导入动画从 JSON 文件
+const importAnimationFromJSON = (event) => {
+  const file = event.target.files[0];
+  if (!file) return;
+  
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const animationData = JSON.parse(e.target.result);
+      
+      // 验证 JSON 格式
+      if (!animationData.version) {
+        throw new Error('无效的动画文件格式：缺少 version 字段');
+      }
+      if (!animationData.frames || !Array.isArray(animationData.frames)) {
+        throw new Error('无效的动画文件格式：缺少 frames 数组');
+      }
+      
+      // 验证帧数据格式
+      for (let i = 0; i < animationData.frames.length; i++) {
+        const frame = animationData.frames[i];
+        if (!frame.pose) {
+          throw new Error(`无效的帧数据：第${i + 1}帧缺少 pose 对象`);
+        }
+        // 验证关键关节点
+        const requiredJoints = ['head', 'neck', 'chest', 'hips', 'leftShoulder', 'rightShoulder'];
+        for (const joint of requiredJoints) {
+          if (!frame.pose[joint] || typeof frame.pose[joint].x !== 'number' || typeof frame.pose[joint].y !== 'number') {
+            throw new Error(`无效的帧数据：第${i + 1}帧缺少关节${joint}的有效坐标`);
+          }
+        }
+      }
+      
+      // 导入设置
+      if (animationData.settings) {
+        if (animationData.settings.beats) beats.value = animationData.settings.beats;
+        if (animationData.settings.fps) fps.value = animationData.settings.fps;
+      }
+      
+      // 导入帧数据
+      frames.value = JSON.parse(JSON.stringify(animationData.frames));
+      
+      // 导入自定义动作（合并到现有动作库）
+      if (animationData.customActions) {
+        Object.assign(customActions.value, animationData.customActions);
+        Object.assign(quickActions, animationData.customActions);
+        localStorage.setItem('customActions', JSON.stringify(customActions.value));
+      }
+      
+      // 跳转到第一帧并重绘
+      currentFrame.value = 0;
+      nextTick(() => {
+        draw();
+        updateAllThumbnails();
+      });
+      
+      // 清空文件输入
+      event.target.value = '';
+      
+      const customActionsCount = animationData.customActions ? Object.keys(animationData.customActions).length : 0;
+      alert(`✅ 成功导入动画！\n- 版本：${animationData.version}\n- 帧数：${animationData.frames.length}\n- 拍子数：${beats.value}\n- 帧率：${fps.value}\n- 自定义动作：${customActionsCount}个`);
+      
+      console.log(`✅ 动画导入成功：${animationData.frames.length}帧，${customActionsCount}个自定义动作`);
+      
+    } catch (error) {
+      alert(`导入失败：${error.message}`);
+      console.error('导入动画失败:', error);
+    }
+  };
+  reader.onerror = () => {
+    alert('读取文件失败');
+  };
+  reader.readAsText(file);
 };
 
 // 初始化时加载自定义动作
