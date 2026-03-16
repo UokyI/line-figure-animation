@@ -1,3 +1,9 @@
+---
+name: generate_animation
+description: 生成线条小人动画 JSON 数据。根据用户提供的动作描述，生成一个包含完整帧数据的 JSON 动画文件。
+version: 1.0.0
+---
+
 # generate_animation Skill
 
 ## 描述
