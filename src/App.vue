@@ -8,6 +8,7 @@
         <select v-model="beats">
           <option value="4">4 拍</option>
           <option value="8">8 拍</option>
+          <option value="16">16 拍</option>
         </select>
       </div>
       
@@ -45,7 +46,16 @@
         <div class="timeline-controls">
           <button @click="firstFrame">|&lt;</button>
           <button @click="prevFrame">&lt;</button>
-          <button @click="playAnimation" :disabled="isPlaying">{{ isPlaying ? '播放中...' : '播放' }}</button>
+          
+          <!-- 播放控制按钮组 -->
+          <template v-if="!isPlaying">
+            <button @click="playAnimation" class="play-btn">▶ 播放</button>
+          </template>
+          <template v-else>
+            <button @click="pauseAnimation" class="pause-btn">⏸ 暂停</button>
+            <button @click="stopAnimation" class="stop-btn">⏹ 停止</button>
+          </template>
+          
           <button @click="nextFrame">&gt;</button>
           <button @click="lastFrame">&gt;|</button>
           <button @click="addFrame">+ 添加帧</button>
@@ -1981,53 +1991,78 @@ const lastFrame = () => goToFrame(frames.value.length - 1);
 
 const playAnimation = () => {
   if (isPlaying.value) return;
+  
   isPlaying.value = true;
   let frameIndex = 0;
   const interval = 1000 / fps.value;
+  
+  // 计算播放总时长：基于拍数（1 拍 = 1 秒）
+  const totalDuration = beats.value * 1000; // 拍数转换为毫秒
+  const startTime = Date.now();
+  
   const animate = () => {
     if (!isPlaying.value) return;
+    
     goToFrame(frameIndex);
     frameIndex = (frameIndex + 1) % frames.value.length;
-   setTimeout(() => {
+    
+    const elapsed = Date.now() - startTime;
+    
+    // 如果已达到拍数对应的时长，自动停止
+    if (elapsed >= totalDuration) {
+      stopAnimation();
+      return;
+    }
+    
+    setTimeout(() => {
       if (isPlaying.value) requestAnimationFrame(animate);
     }, interval);
   };
+  
   animate();
-  setTimeout(() => { isPlaying.value = false; }, 5000);
+};
+
+// 暂停动画播放
+const pauseAnimation = () => {
+  isPlaying.value = false;
+};
+
+// 停止动画播放并回到第一帧
+const stopAnimation = () => {
+  isPlaying.value = false;
+  currentFrame.value = 0;
+  draw();
 };
 
 const exportVideoWithFFmpeg = async () => {
   if (isExporting.value) return;
   if (!ffmpegLoaded.value) {
     alert('FFmpeg 还未加载完成，请稍候再试！');
-   return;
+    return;
   }
   
   isExporting.value = true;
   exportProgress.value = 0;
   
   try {
-  const tempCanvas = document.createElement('canvas');
+    const tempCanvas = document.createElement('canvas');
     tempCanvas.width = 800;
     tempCanvas.height = 600;
-  const tempCtx = tempCanvas.getContext('2d');
+    const tempCtx = tempCanvas.getContext('2d');
     
-  for (let i = 0; i < frames.value.length; i++) {
+    for (let i = 0; i < frames.value.length; i++) {
       tempCtx.fillStyle = '#ffffff';
       tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
-    drawStickman(tempCtx, frames.value[i].pose, { scale: 1, jointRadius: 10, drawJoints: true });
+      drawStickman(tempCtx, frames.value[i].pose, { scale: 1, jointRadius: 10, drawJoints: true });
       
-    const data = tempCanvas.toDataURL('image/png');
-    const base64Data = data.split(',')[1];
-     await ffmpeg.writeFile(`frame${i.toString().padStart(4, '0')}.png`, Uint8Array.from(atob(base64Data), c => c.charCodeAt(0)));
+      const data = tempCanvas.toDataURL('image/png');
+      const base64Data = data.split(',')[1];
+      await ffmpeg.writeFile(`frame${i.toString().padStart(4, '0')}.png`, Uint8Array.from(atob(base64Data), c => c.charCodeAt(0)));
       exportProgress.value = Math.round(((i + 1) / frames.value.length) * 50);
-     await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise(resolve => setTimeout(resolve, 100));
     }
     
-   await ffmpeg.exec([
-      '-framerate', fps.value.toString(),
-      '-i', 'frame%04d.png',
-      '-c:v', 'libx264',
+    await ffmpeg.exec([
       '-pix_fmt', 'yuv420p',
       '-vf', 'scale=trunc(iw/2)*2:trunc(ih/2)*2',
       '-movflags', '+faststart',
